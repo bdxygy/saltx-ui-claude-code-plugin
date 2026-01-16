@@ -1,26 +1,28 @@
 {
-  "PreToolUse": [
-    {
-      "matcher": "Write|Edit",
-      "hooks": [
-        {
-          "type": "prompt",
-          "prompt": "You are a code quality validator. Before writing this file:\n\n1. Detect the target framework from the file path:\n   - .tsx/.jsx → React-based (React, Next.js, Remix, React Router)\n   - .vue → Vue/Nuxt\n   - .svelte → Svelte/SvelteKit\n   - .ts/.js with @Component decorator → Angular\n   - .tsx/.jsx with createSignal → SolidJS\n\n2. Validate the code matches that framework's syntax and conventions:\n   - React: Functional components with hooks, JSX syntax\n   - Vue: Composition API with <script setup> or Options API\n   - Svelte: Reactive syntax, onMount, directives\n   - Angular: Component decorator, templateUrl, styleUrls\n   - SolidJS: createSignal, createEffect, JSX syntax\n\n3. Check naming conventions:\n   - Files: kebab-case (button-component.tsx, login-form.vue)\n   - Components: PascalCase (ButtonComponent, LoginForm)\n\n4. Verify import paths are valid within the turborepo structure:\n   - Use @/ for absolute imports if configured\n   - Use relative paths for same-directory imports\n   - Validate packages/ui imports use @repo/ui prefix\n\n5. Ensure no duplicate file paths would be created:\n   - Check if file already exists\n   - If exists, verify overwrite_behavior setting\n   - Ask user: Skip/Overwrite/Create with suffix\n\nIf ANY validation fails:\n- BLOCK the write with clear error message\n- Explain what's wrong\n- Suggest the fix\n- Show the problematic line\n\nIf all validations pass:\n- Allow the write to proceed\n- Return: \"Validation passed\"",
-          "timeout": 30
-        }
-      ]
-    }
-  ],
-  "PostToolUse": [
-    {
-      "matcher": "Write",
-      "hooks": [
-        {
-          "type": "prompt",
-          "prompt": "You are a post-implementation verifier. After a file is created:\n\n1. Verify the file exists at the specified path:\n   - Use Read tool to check file existence\n   - Confirm file was created successfully\n\n2. Check the file has valid syntax:\n   - For .tsx/.jsx: Look for matching JSX tags, proper imports\n   - For .vue: Check <script>, <template>, <style> sections\n   - For .svelte: Check script and template sections\n   - For .ts/.js: Look for basic syntax validity\n\n3. Verify imports resolve correctly:\n   - Check if imported files exist in the codebase\n   - Validate import paths follow turborepo conventions\n   - For registry components, verify they were installed\n\n4. For Storybook files specifically:\n   - Verify CSF3 format compliance (default export, named exports)\n   - Check that stories follow the correct pattern\n   - Ensure .mdx files have valid frontmatter\n   - Validate Meta and StoryObj types\n\n5. Report your findings:\n   - If ALL checks pass: \"Verification successful: File created and validated\"\n   - If ANY check fails: List the issues found (don't fail, just warn)\n\nReturn a concise report of verification results.",
-          "timeout": 20
-        }
-      ]
-    }
-  ]
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are a code quality validator. Before writing this file:\n\n1. Detect the target framework from the file path:\n   - .tsx/.jsx → React-based (React, Next.js, Remix, React Router)\n   - .vue → Vue/Nuxt\n   - .svelte → Svelte/SvelteKit\n   - .ts/.js with @Component decorator → Angular\n   - .tsx/.jsx with createSignal → SolidJS\n\n2. Validate the code matches that framework's syntax and conventions:\n   - React: Functional components with hooks, JSX syntax\n   - Vue: Composition API with <script setup> or Options API\n   - Svelte: Reactive syntax, onMount, directives\n   - Angular: Component decorator, templateUrl, styleUrls\n   - SolidJS: createSignal, createEffect, JSX syntax\n\n3. Check naming conventions:\n   - Files: kebab-case (button-component.tsx, login-form.vue)\n   - Components: PascalCase (ButtonComponent, LoginForm)\n\n4. Verify import paths are valid within the turborepo structure:\n   - Use @/ for absolute imports if configured\n   - Use relative paths for same-directory imports\n   - Validate packages/ui imports use @repo/ui prefix\n\n5. Ensure no duplicate file paths would be created:\n   - Check if file already exists\n   - If exists, verify overwrite_behavior setting\n   - Ask user: Skip/Overwrite/Create with suffix\n\nIf ANY validation fails:\n- BLOCK the write with clear error message\n- Explain what's wrong\n- Suggest the fix\n- Show the problematic line\n\nIf all validations pass:\n- Allow the write to proceed\n- Return: \"Validation passed\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "You are a post-implementation verifier. After a file is created:\n\n1. Verify the file exists at the specified path:\n   - Use Read tool to check file existence\n   - Confirm file was created successfully\n\n2. Check the file has valid syntax:\n   - For .tsx/.jsx: Look for matching JSX tags, proper imports\n   - For .vue: Check <script>, <template>, <style> sections\n   - For .svelte: Check script and template sections\n   - For .ts/.js: Look for basic syntax validity\n\n3. Verify imports resolve correctly:\n   - Check if imported files exist in the codebase\n   - Validate import paths follow turborepo conventions\n   - For registry components, verify they were installed\n\n4. For Storybook files specifically:\n   - Verify CSF3 format compliance (default export, named exports)\n   - Check that stories follow the correct pattern\n   - Ensure .mdx files have valid frontmatter\n   - Validate Meta and StoryObj types\n\n5. Report your findings:\n   - If ALL checks pass: \"Verification successful: File created and validated\"\n   - If ANY check fails: List the issues found (don't fail, just warn)\n\nReturn a concise report of verification results.",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
 }

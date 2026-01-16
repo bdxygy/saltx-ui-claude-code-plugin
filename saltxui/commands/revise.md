@@ -367,10 +367,63 @@ If revision fails:
 
 ## Chunked Reading Implementation
 
-**Reading large YAML files:**
+**Step 1: Use Grep to Find Relevant Sections**
+
+Before reading large files, use `Grep` to locate relevant content:
+
+```bash
+# Search for specific section/component in raw YAML
+Grep(path=".salt-ui/figma/xyz/123_raw.yaml", pattern="login-form|LoginForm", output_mode="content", -n=true, -C=5)
+
+# This returns:
+# - Line numbers where matches occur
+# - 5 lines of context (-C flag)
+# - Content around the match
+```
+
+**Step 2: Calculate Targeted Read Ranges**
+
+From Grep results, determine which chunks to read:
+
+```bash
+# Grep shows matches at lines: 150-165, 423-445, 890-912
+
+# Calculate which chunks contain these lines:
+# Chunk 1 (lines 1-500): Read for matches at 150-165
+# Chunk 2 (lines 501-1000): Read for matches at 423-445
+# Chunk 3 (lines 1001-1500): Skip (no matches in this range)
+# Chunk 4 (lines 1501-2000): Read for matches at 890-912
+```
+
+**Step 3: Read Only Relevant Chunks**
 
 ```
-# Example: Reading 2000-line raw YAML file in 500-line chunks
+# Read chunk 1 (contains match at 150-165)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1, limit=500)
+  → Extract lines 140-170 (include context around match)
+
+# Read chunk 2 (contains match at 423-445)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=501, limit=500)
+  → Extract lines 418-450 (include context around match)
+
+# Skip chunk 3 (no matches)
+
+# Read chunk 4 (contains match at 890-912)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1501, limit=500)
+  → Extract lines 885-920 (include context around match)
+```
+
+**Benefits of Grep-first approach:**
+- Reduces file I/O by skipping irrelevant chunks
+- Quickly locates specific components without reading entire file
+- Provides line numbers for targeted reads
+- More efficient for large files with sparse relevant content
+
+**Fallback: Read Sequential Chunks**
+
+If Grep returns too many results or pattern is too broad:
+```
+# Example: Reading entire file in 500-line chunks (fallback method)
 
 Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1, limit=500)
   → Lines 1-500 (Wrapper component, Banner start)

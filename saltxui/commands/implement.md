@@ -55,17 +55,44 @@ Input: https://www.figma.com/design/4zD0kyv2x9ao27VSridvya/Vibe?node-id=772-2722
 Output: figma_file_id=4zD0kyv2x9ao27VSridvya, node_id=772:27229
 ```
 
-### Step 2: Detect Target App and Framework
+### Step 2: Detect Project Structure and Framework
 
-If `--app` not provided:
-- Detect from current working directory
-- Look for `apps/` subdirectory
-- Check package.json location
-- Default to first app in `apps/` if ambiguous
+First, verify this is a Turborepo project:
 
-If `--framework` not provided:
-- Run framework detection script: `/Users/budisantoso/.claude/plugins/cache/claude-plugins-official/plugin-dev/f70b65538da0/scripts/detect-framework.sh`
-- Parse output: `FRAMEWORK=..., TYPESCRIPT=..., ROUTING=...`
+1. Check for Turborepo indicators:
+   - `apps/` directory exists
+   - `turbo.json` exists
+   - `pnpm-workspace.yaml` or `package.json` with `workspaces` field
+
+2. If NOT a Turborepo project:
+   - Use `AskUserQuestion` to prompt the user:
+   
+   ```
+   Question: This project does not appear to be a Turborepo project.
+   
+   Options:
+   - "Continue with current structure" - Create components using existing project structure
+   - "Migrate to Turborepo first" - Set up Turborepo structure before implementing
+   ```
+   
+   - If user chooses "Migrate to Turborepo first":
+     - Stop implementation
+     - Provide guidance on Turborepo migration
+     - Suggest running `/implement` again after migration
+   
+   - If user chooses "Continue with current structure":
+     - Proceed with existing directory structure
+     - Place components in appropriate locations based on framework
+
+3. If `--app` not provided:
+   - Detect from current working directory
+   - Look for `apps/` subdirectory (Turborepo) or `src/` (monorepo)
+   - Check package.json location
+   - Default to first app in `apps/` if ambiguous
+
+4. If `--framework` not provided:
+   - Run framework detection script: `/Users/budisantoso/.claude/plugins/cache/claude-plugins-official/plugin-dev/f70b65538da0/scripts/detect-framework.sh`
+   - Parse output: `FRAMEWORK=..., TYPESCRIPT=..., ROUTING=...`
 
 ### Step 3: Call SaltxUI MCP to Fetch Design Data
 
@@ -88,7 +115,69 @@ Read the generated YAML file and parse:
 - Text content
 - Props and variants
 
-### Step 5: Show Preview and Confirm
+### Step 5: List All Registry Components
+
+Before searching for specific components, get the full registry listing:
+
+Use `mcp__SaltxUI-MCP__search_items_in_registries` with:
+- `registries`: ["default"] (or configured registries)
+- No specific components (to get all available)
+
+This returns:
+- Total item count in registry
+- Complete list of available components
+- Component types (ui, lib, hook, etc.)
+
+Example output:
+```
+Registry: default
+Total items: 500
+Available components: button, input, label, checkbox, dropdown, ...
+```
+
+This helps understand what's available before matching specific components from the Figma design.
+
+### Step 6: Search Components in Registry
+
+Use `mcp__SaltxUI-MCP__search_items_in_registries` to find matching components:
+
+For each component in the YAML:
+1. Extract component name (without markers `[COMP]`, `[STYL]`)
+2. Search for it in the registry
+3. Check if it exists and is available
+
+Example search:
+```
+Components to search: button, input, label, checkbox, divider
+```
+
+Build a mapping:
+- **Found in registry**: Will use `add_items_from_registries`
+- **Not found**: Will build custom from scratch
+- **Marked `[STYL]`**: Get from registry + apply custom Tailwind
+
+### Step 7: View Registry Component Details
+
+Before adding, inspect components found in registry:
+
+Use `mcp__SaltxUI-MCP__view_component` for each component to:
+- View the component's source code
+- Check its dependencies
+- Understand its implementation
+- Verify it matches requirements
+
+The view tool returns a cache file path containing:
+- Complete source code with syntax highlighting
+- File structure and component metadata
+- Dependencies and registry information
+
+Example:
+```
+Viewing components: button, input, label
+Cache files: .salt-ui/default/button.mdx
+```
+
+### Step 8: Show Preview and Confirm
 
 Before creating files, show the user a preview:
 
@@ -116,7 +205,20 @@ Proceed? (y/n)
 
 Use `AskUserQuestion` to get confirmation before proceeding.
 
-### Step 6: Generate Component Code
+### Step 9: Add Registry Components
+
+Before generating custom code, install components found in registry:
+
+Use `mcp__SaltxUI-MCP__add_items_from_registries` with:
+- Components that were found in registry search
+- Components without `[COMP]` marker (standard components)
+- Components with `[STYL]` marker (will be customized with Tailwind)
+
+This installs pre-built components from the registry, reducing custom code generation.
+
+### Step 10: Generate Custom Component Code
+
+For components marked `[COMP]` or not found in registry:
 
 Delegate to the Component Implementation Agent by reading its instructions and following them:
 
@@ -125,8 +227,9 @@ Delegate to the Component Implementation Agent by reading its instructions and f
 3. Create component files with framework-specific syntax
 4. Create route files as needed
 5. Use appropriate file extensions (.tsx, .jsx, .vue, .svelte, etc.)
+6. Apply Tailwind classes from YAML for `[STYL]` components
 
-### Step 7: Install Dependencies
+### Step 11: Install Dependencies
 
 After component creation:
 - Identify new dependencies from generated code
@@ -135,28 +238,38 @@ After component creation:
 - Ask for confirmation before installing
 - Run install command if confirmed
 
-### Step 8: Generate Storybook (Optional)
+### Step 12: Generate Storybook (Optional)
 
-Ask user: "Generate Storybook stories and documentation? (y/n)"
+Use `AskUserQuestion` to prompt the user:
 
-If yes, delegate to Storybook Generation Agent:
+```
+Question: Generate Storybook stories and documentation for the implemented components?
+
+Options:
+- "Yes, generate stories and docs" - Create .stories.tsx and .mdx files
+- "No, skip for now" - Complete implementation without Storybook
+```
+
+If user chooses to generate:
+
 1. Read `agents/storybook-generator.md`
 2. Follow the agent's workflow for Storybook generation
-3. Create `.stories.tsx` files
-4. Create `.mdx` documentation files
+3. Create `.stories.tsx` files with CSF3 format
+4. Create `.mdx` documentation files with component docs
+5. Verify stories are valid for the target framework
 
-### Step 9: Run Verification
+If user chooses to skip:
+- Note that Storybook can be added later
+- Provide guidance on manual Storybook setup if needed
+
+### Step 13: Run Verification
 
 After implementation:
 - Verify all files exist
 - Check for syntax errors
 - Show summary of created files
 
-### Step 10: Show Final Summary
-
-Display:
-```
-Implementation complete!
+### Step 14: Show Final Summary
 
 Created files:
 - apps/web/components/login-form/LoginForm.tsx

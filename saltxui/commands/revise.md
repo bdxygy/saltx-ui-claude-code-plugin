@@ -1,7 +1,7 @@
 ---
 name: revise
 description: Revise UI implementation by comparing against raw Figma YAML file, handling large files with chunked reading
-argument-hint: <yaml-file-path> [--component <component-name>] [--fix-style]
+argument-hint: <yaml-file-path> [--section <section>] [--component <component-name>] [--fix-style]
 allowed-tools:
   - Read
   - Write
@@ -16,7 +16,7 @@ You are the `/revise` command that fixes UI implementations that don't match the
 
 This command runs when the user executes:
 ```
-/revise <yaml-file-path> [--component <component-name>] [--fix-style]
+/revise <yaml-file-path> [--section <section>] [--component <component-name>] [--fix-style]
 ```
 
 ## Input Arguments
@@ -28,11 +28,17 @@ Parse the user's command input:
    - Format: `.salt-ui/figma/{fileId}/{nodeId}.yaml`
    - If not provided, use the most recent YAML file from `.salt-ui/figma/`
 
-2. **--component** (optional):
-   - Specific component name to revise
+2. **--section** (optional):
+   - Specify which UI section to revise (e.g., "login-form", "header", "sidebar")
+   - Uses partial matching to find components in YAML hierarchy
    - If not provided, revise all components from the YAML
 
-3. **--fix-style** (optional flag):
+3. **--component** (optional):
+   - Specific component name to revise (e.g., "Button", "InputEmail")
+   - More precise than --section, targets exact component names
+   - Can be combined with --section to narrow down within a section
+
+4. **--fix-style** (optional flag):
    - Focus on fixing Tailwind/style mismatches only
    - Skip structural changes
 
@@ -137,9 +143,37 @@ ComponentTree {
 }
 ```
 
-### Step 5: Detect Implemented Files
+### Step 5: Filter Components and Detect Implemented Files
 
-Find existing implementation files:
+**Filter by --section and/or --component:**
+
+If `--section` specified:
+```bash
+# Search YAML for components matching the section name
+# Use partial matching to find related components in hierarchy
+
+Example: --section "login-form"
+Matches: "LoginForm", "HeaderForm", "ContainerForm", "InputGroup"
+```
+
+If `--component` specified:
+```bash
+# Search for exact component name match
+
+Example: --component "Button"
+Matches: Only "Button" component
+```
+
+If both specified:
+```bash
+# Find component within section
+# More precise filtering
+
+Example: --section "login-form" --component "Button"
+Matches: Only "Button" components within "login-form" hierarchy
+```
+
+**Find existing implementation files:**
 
 ```bash
 # For React/Next.js
@@ -154,17 +188,17 @@ find . -name "*.svelte"
 # For Angular
 find . -name "*.ts" | grep -v ".spec."
 
-# Match against component names from YAML
+# Match against filtered component names from YAML
 ```
 
 Create mapping:
 ```
-YAML Component → Implemented File
+YAML Component → Implemented File (filtered by --section/--component)
 ```
 
 ### Step 6: Compare Implementation vs YAML
 
-For each component from YAML:
+For each component from filtered list:
 
 1. **Read the implemented file** (chunked if large)
 
@@ -376,11 +410,20 @@ Read settings from `.claude/implement.local.md` if it exists:
 # Revise all components from YAML
 /revise .salt-ui/figma/4zD0kyv2x9ao27VSridvya/772-27196.yaml
 
+# Revise specific section (all components in login-form hierarchy)
+/revise .salt-ui/figma/4zD0kyv2x9ao27VSridvya/772-27196.yaml --section login-form
+
 # Revise specific component
 /revise .salt-ui/figma/4zD0kyv2x9ao27VSridvya/772-27196.yaml --component Button
 
+# Revise specific component within section
+/revise .salt-ui/figma/4zD0kyv2x9ao27VSridvya/772-27196.yaml --section login-form --component Button
+
 # Fix only Tailwind/style issues
 /revise .salt-ui/figma/4zD0kyv2x9ao27VSridvya/772-27196.yaml --fix-style
+
+# Fix style for specific section
+/revise .salt-ui/figma/4zD0kyv2x9ao27VSridvya/772-27196.yaml --section header --fix-style
 
 # Auto-detect most recent YAML
 /revise
@@ -390,6 +433,9 @@ Read settings from `.claude/implement.local.md` if it exists:
 
 - Always check file size before reading
 - Use chunked reading for files > 100KB
+- Use `--section` to target specific UI sections
+- Use `--component` for precise component targeting
+- Combine `--section` and `--component` for fine-grained control
 - Process components one at a time for large revisions
 - Verify each revision before moving to next
 - Keep backups of original files

@@ -95,35 +95,51 @@ eval "$(saltxui/scripts/detect-lines.sh <yaml-file-path> | grep '^FILE_SIZE\|^LI
 
 ### Step 3: Read YAML File (Chunked if Large)
 
-**For small files:**
+Use the `USE_CHUNKED` flag from detect-lines script to determine reading approach:
+
+**If USE_CHUNKED=false** (small files):
 ```
 Read the complete YAML file at <yaml-file-path>
 ```
 
-**For large files, use chunked reading:**
+**If USE_CHUNKED=true** (large files):
 
 ```bash
 # Use CHUNK_SIZE and LINE_COUNT from detect-lines script
 # CHUNK_SIZE is already set based on file scale (500-2500)
 # LINE_COUNT is already set from the script output
 
-for offset in $(seq 1 $CHUNK_SIZE $LINE_COUNT); do
-  # Read chunk
-  Read <yaml-file-path> with offset=$offset limit=$CHUNK_SIZE
+if [ "$USE_CHUNKED" = "true" ]; then
+  # Use Grep-first approach if USE_GREP_FIRST=true
+  if [ "$USE_GREP_FIRST" = "true" ]; then
+    # Step 1: Use Grep to find relevant sections
+    Grep(path="<yaml-file-path>", pattern="<section-pattern>", output_mode="content", -n=true, -C=5)
 
-  # Process chunk
-  - Extract component names in this chunk
-  - Identify component boundaries
-  - Build partial component structure
+    # Step 2: Calculate targeted read ranges from Grep results
+    # Step 3: Read only relevant chunks using CHUNK_SIZE
+  else
+    # Sequential chunk reading (fallback)
+    for offset in $(seq 1 $CHUNK_SIZE $LINE_COUNT); do
+      # Read chunk
+      Read <yaml-file-path> with offset=$offset limit=$CHUNK_SIZE
 
-  # Track progress
-  echo "Processed lines $offset to $((offset + CHUNK_SIZE - 1)) of $LINE_COUNT"
-done
+      # Process chunk
+      - Extract component names in this chunk
+      - Identify component boundaries
+      - Build partial component structure
+
+      # Track progress
+      echo "Processed lines $offset to $((offset + CHUNK_SIZE - 1)) of $LINE_COUNT"
+    done
+  fi
+fi
 ```
 
 **Chunked reading guidelines:**
-- Start with `offset=1`, `limit=$CHUNK_SIZE`
-- `CHUNK_SIZE` is adaptive based on file scale from detect-lines script
+- Check `USE_CHUNKED` flag from detect-lines script
+- Check `USE_GREP_FIRST` flag for Grep-first vs sequential approach
+- Use `CHUNK_SIZE` from script (adaptive 500-2500 based on file scale)
+- Use `LINE_COUNT` from script for iteration
 - Increment offset by CHUNK_SIZE for each chunk
 - Stop when chunk returns fewer lines than limit
 - Reconstruct component hierarchy across chunks

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "SaltxUI-MCP": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@saltx-ui/mcp@beta"
+      ]
+    }
+  }
+}

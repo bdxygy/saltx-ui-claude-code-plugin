@@ -1,0 +1,24 @@
+<script lang="ts">
+export let {{#each props}}{{name}}: {{type}}{{#if defaultValue}} = {{defaultValue}}{{/if}};
+{{/each}}
+
+{{#each children}}
+export let {{name}}: Slot;
+{{/each}}
+
+{{#each events}}
+const dispatch = createEventDispatcher();
+const {{name}} = ({{#if params}}{{params}}{{/if}}) => {
+  {{#if body}}
+  {{{body}}}
+  {{/if}}
+  dispatch('{{name}}'{{#if args}}, {{args}}{{/if}});
+};
+{{/each}}
+</script>
+
+<div class="{{tailwindClasses}}">
+  {{#each children}}
+  <slot name="{{name}}" />
+  {{/each}}
+</div>

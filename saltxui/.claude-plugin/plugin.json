@@ -1,0 +1,11 @@
+{
+  "name": "saltxui",
+  "version": "0.1.0",
+  "description": "Orchestrate the complete end-to-end workflow of implementing UI designs from Figma URLs using the SaltxUI MCP server. Handles code generation, file creation in turborepo structure, dependency installation, Storybook stories and documentation generation, and running Storybook for verification.",
+  "author": {
+    "name": "Budi Santoso"
+  },
+  "keywords": ["figma", "storybook", "turborepo", "ui-components", "code-generation", "mcp"],
+  "homepage": "https://github.com/budisantoso/saltxui",
+  "license": "MIT"
+}

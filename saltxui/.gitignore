@@ -1,0 +1,23 @@
+# Local settings
+.claude/*.local.md
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Cache
+.salt-ui/
+
+# Figma token configuration (contains sensitive token)
+salt-ui.config.json

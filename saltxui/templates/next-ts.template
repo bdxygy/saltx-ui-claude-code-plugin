@@ -1,0 +1,33 @@
+import React from 'react';
+
+interface {{ComponentName}}Props {
+  {{#each props}}
+  {{name}}: {{type}}{{#if defaultValue}} = {{defaultValue}}{{/if}};
+  {{/each}}
+  {{#each children}}
+  {{name}}: React.ReactNode;
+  {{/each}}
+}
+
+export default function {{ComponentName}}({
+  {{#each props}}
+  {{name}}{{#unless defaultValue}},{{/unless}}
+  {{/each}}
+  {{#each children}}
+  {{name}},
+  {{/each}}
+}: {{ComponentName}}Props) {
+  return (
+    <div className="{{tailwindClasses}}">
+      {{#each children}}
+      {{{content}}}
+      {{/each}}
+    </div>
+  );
+}
+
+// Next.js page route at app/components/{{componentFileName}}/page.tsx:
+// import { {{ComponentName}} } from '@/components/{{componentFileName}}';
+// export default function Page() {
+//   return <{{ComponentName}} />;
+// }

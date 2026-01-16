@@ -1,0 +1,105 @@
+---
+import { Meta, Canvas, Controls, Source, Stories, Subtitle, Description, Title } from '@storybook/blocks';
+import * as ButtonStories from './Button.stories';
+
+<Meta of={ButtonStories} />
+
+<Title>Button Component</Title>
+<Subtitle>Reusable button component with multiple variants and sizes</Subtitle>
+<Description of={ButtonStories} />
+
+## Overview
+
+The Button component is a versatile UI element that supports multiple variants, sizes, and states. It's built with Tailwind CSS and follows the design system guidelines.
+
+## Examples
+
+### Default Button
+
+<Canvas of={ButtonStories}>
+  <Story of={ButtonStories.Default} />
+</Canvas>
+
+### Size Variants
+
+<Canvas of={ButtonStories}>
+  <Story of={ButtonStories.Small} />
+  <Story of={ButtonStories.Medium} />
+  <Story of={ButtonStories.Large} />
+</Canvas>
+
+### Variant Styles
+
+<Canvas of={ButtonStories}>
+  <Story of={ButtonStories.Primary} />
+  <Story of={ButtonStories.Secondary} />
+  <Story of={ButtonStories.Danger} />
+</Canvas>
+
+### States
+
+<Canvas of={ButtonStories}>
+  <Story of={ButtonStories.Disabled} />
+</Canvas>
+
+## Props
+
+<Controls of={ButtonStories.Default />
+
+## Usage
+
+### Basic Usage
+
+```tsx
+import { Button } from '@/components/Button';
+
+<Button label="Click me" onClick={() => console.log('clicked')} />
+```
+
+### With Size
+
+```tsx
+<Button size="lg" label="Large Button" />
+```
+
+### With Variant
+
+```tsx
+<Button variant="danger" label="Delete" />
+```
+
+### Disabled
+
+```tsx
+<Button disabled label="Disabled Button" />
+```
+
+## Design Tokens
+
+### Colors
+- **Primary**: `#3b82f6` (blue-500)
+- **Secondary**: `#64748b` (slate-500)
+- **Danger**: `#ef4444` (red-500)
+- **Disabled**: `#d1d5db` (gray-300)
+
+### Spacing
+- **Small**: Padding `8px 16px`, Height `32px`
+- **Medium**: Padding `12px 24px`, Height `40px`
+- **Large**: Padding `16px 32px`, Height `48px`
+
+### Typography
+- **Font**: Inter, sans-serif
+- **Weight**: `500` (font-medium)
+- **Size**: `14px` (text-sm)
+
+## Accessibility
+
+- **Keyboard Navigation**: Tab to focus, Enter/Space to activate
+- **ARIA**: Proper ARIA attributes for screen readers
+- **Focus Indicator**: Visible focus ring (ring-2 ring-blue-500)
+- **Color Contrast**: WCAG AA compliant (4.5:1)
+
+## All Stories
+
+<Stories of={ButtonStories} />
+---

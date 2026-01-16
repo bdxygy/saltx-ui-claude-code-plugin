@@ -1,0 +1,44 @@
+import { useState } from 'react';
+import type { LoaderFunctionArgs, ActionFunctionArgs } from 'react-router';
+
+interface {{ComponentName}}Props {
+  {{#each props}}
+  {{name}}: {{type}}{{#if defaultValue}} = {{defaultValue}}{{/if}};
+  {{/each}}
+  {{#each children}}
+  {{name}}: React.ReactNode;
+  {{/each}}
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  // Add data loading logic here
+  return {};
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  // Add form handling logic here
+  return {};
+}
+
+export function {{ComponentName}}({
+  {{#each props}}
+  {{name}}{{#unless defaultValue}},{{/unless}}
+  {{/each}}
+  {{#each children}}
+  {{name}},
+  {{/each}}
+}: {{ComponentName}}Props) {
+  // Component implementation
+  return (
+    <div className="{{tailwindClasses}}">
+      {{#each children}}
+      {{{content}}}
+      {{/each}}
+    </div>
+  );
+}
+
+// React Router v7+ route at app/routes/components.{{componentFileName}}.tsx:
+// export default function Route() {
+//   return <{{ComponentName}} />;
+// }

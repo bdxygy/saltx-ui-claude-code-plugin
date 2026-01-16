@@ -1,0 +1,47 @@
+import type { LoaderFunctionArgs, ActionFunctionArgs } from '@remix-run/node';
+import { Form, useActionData, useLoaderData } from '@remix-run/react';
+import React from 'react';
+
+interface {{ComponentName}}Props {
+  {{#each props}}
+  {{name}}: {{type}}{{#if defaultValue}} = {{defaultValue}}{{/if}};
+  {{/each}}
+  {{#each children}}
+  {{name}}: React.ReactNode;
+  {{/each}}
+}
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  // Add data loading logic here
+  return {};
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  // Add form handling logic here
+  return {};
+}
+
+export function {{ComponentName}}({
+  {{#each props}}
+  {{name}}{{#unless defaultValue}},{{/unless}}
+  {{/each}}
+  {{#each children}}
+  {{name}},
+  {{/each}}
+}: {{ComponentName}}Props) {
+  const loaderData = useLoaderData();
+  const actionData = useActionData();
+
+  return (
+    <div className="{{tailwindClasses}}">
+      {{#each children}}
+      {{{content}}}
+      {{/each}}
+    </div>
+  );
+}
+
+// Remix route at routes/components.{{componentFileName}}.tsx:
+// export default function Route() {
+//   return <{{ComponentName}} />;
+// }

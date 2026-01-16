@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "saltxui-marketplace",
+  "description": "UI design-to-code plugin for Figma integration with multi-framework support",
+  "owner": {
+    "name": "Budi Santoso"
+  },
+  "plugins": [
+    {
+      "name": "saltxui",
+      "description": "Orchestrate the complete end-to-end workflow of implementing UI designs from Figma URLs. Handles code generation, file creation in turborepo structure, dependency installation, Storybook stories and documentation generation for 10+ frameworks (React, Next.js, Vue, Angular, Svelte, SolidJS, Remix, React Router v7, Nuxt, SvelteKit).",
+      "version": "0.1.0",
+      "author": {
+        "name": "Budi Santoso"
+      },
+      "source": "./saltxui",
+      "category": "development",
+      "homepage": "https://github.com/budisantoso/saltxui"
+    }
+  ]
+}

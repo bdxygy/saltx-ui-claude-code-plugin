@@ -1,0 +1,79 @@
+component: "LoginForm [COMP]"
+style:
+  display: flex
+  flexDirection: column
+  gap: 16
+  padding: 24
+  backgroundColor: "#ffffff"
+  borderRadius: 8
+  borderWidth: 1
+  borderColor: "#e5e7eb"
+tailwindcss:
+  - "flex"
+  - "flex-col"
+  - "gap-4"
+  - "p-6"
+  - "bg-white"
+  - "rounded-lg"
+  - "border"
+  - "border-gray-200"
+children:
+  - component: "FormHeader [COMP]"
+    content_text: "Welcome Back"
+    tailwindcss:
+      - "text-2xl"
+      - "font-bold"
+      - "text-gray-900"
+      - "mb-2"
+
+  - component: "FormLabel [COMP]"
+    content_text: "Email"
+    tailwindcss:
+      - "text-sm"
+      - "font-medium"
+      - "text-gray-700"
+      - "mb-1"
+
+  - component: "Input [STYL]"
+    tailwindcss:
+      - "w-full"
+      - "px-3"
+      - "py-2"
+      - "border"
+      - "border-gray-300"
+      - "rounded-md"
+      - "focus:ring-2"
+      - "focus:ring-blue-500"
+
+  - component: "FormLabel [COMP]"
+    content_text: "Password"
+    tailwindcss:
+      - "text-sm"
+      - "font-medium"
+      - "text-gray-700"
+      - "mb-1"
+      - "mt-4"
+
+  - component: "Input [STYL]"
+    tailwindcss:
+      - "w-full"
+      - "px-3"
+      - "py-2"
+      - "border"
+      - "border-gray-300"
+      - "rounded-md"
+      - "focus:ring-2"
+      - "focus:ring-blue-500"
+
+  - component: "Button [STYL]"
+    content_text: "Sign In"
+    tailwindcss:
+      - "w-full"
+      - "bg-blue-600"
+      - "text-white"
+      - "px-4"
+      - "py-2"
+      - "rounded-md"
+      - "font-medium"
+      - "hover:bg-blue-700"
+      - "mt-6"

@@ -1,0 +1,30 @@
+import { Component } from 'solid-js';
+
+interface {{ComponentName}}Props {
+  {{#each props}}
+  {{name}}: {{type}}{{#if defaultValue}} = {{defaultValue}}{{/if}};
+  {{/each}}
+  {{#each children}}
+  {{name}}: any;
+  {{/each}}
+}
+
+export function {{ComponentName}}(props: {{ComponentName}}Props) {
+  {{#each stateVars}}
+  const [{{name}}, {{name}}Setter] = createSignal({{#if defaultValue}}{{defaultValue}}{{/if}});
+  {{/each}}
+
+  {{#each effects}}
+  createEffect(() => {
+    {{{body}}}
+  });
+  {{/each}}
+
+  return (
+    <div class="{{tailwindClasses}}">
+      {{#each children}}
+      {props.{{name}}}
+      {{/each}}
+    </div>
+  );
+}

@@ -1,0 +1,43 @@
+<script setup lang="ts">
+interface Props {
+  {{#each props}}
+  {{name}}: {{type}}{{#if defaultValue}} = {{defaultValue}}{{/if}};
+  {{/each}}
+  {{#each children}}
+  {{name}}: Slot;
+  {{/each}}
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  {{#each props}}
+  {{#if defaultValue}}
+  {{name}}: {{defaultValue}},
+  {{/if}}
+  {{/each}}
+});
+
+const emit = defineEmits<{
+  {{#each events}}
+  {{name}}: [{{#if args}}{{args}}{{/if}}];
+  {{/each}}
+}>();
+
+{{#each methods}}
+const {{name}} = ({{#if params}}{{params}}{{/if}}) => {
+  {{#if body}}
+  {{{body}}}
+  {{/if}}
+  {{#if emits}}
+  emit('{{emits}}'{{#if args}}, {{args}}{{/if}});
+  {{/if}}
+};
+{{/each}}
+</script>
+
+<template>
+  <div :class="['{{tailwindClasses}}']">
+    {{#each children}}
+    <slot name="{{name}}" />
+    {{/each}}
+  </div>
+</template>

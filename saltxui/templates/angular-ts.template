@@ -1,0 +1,44 @@
+import { Component, input, output{{#if hasComputed}}, computed{{/if}} } from '@angular/core';
+
+@Component({
+  selector: 'app-{{componentFileName}}',
+  templateUrl: './{{componentFileName}}.html',
+  styleUrls: ['./{{componentFileName}}.css']
+})
+export class {{ComponentName}}Component {
+  {{#each props}}
+  {{#if defaultValue}}
+  readonly {{name}} = input<{{type}}>({{defaultValue}});
+  {{else}}
+  readonly {{name}} = input.required<{{type}}>();
+  {{/if}}
+  {{/each}}
+  {{#each children}}
+  readonly {{name}} = input<string>('');
+  {{/each}}
+  {{#each events}}
+  readonly {{name}} = output<{{#if eventType}}{{eventType}}{{else}}void{{/if}}>();
+  {{/each}}
+
+  {{#each methods}}
+  {{name}}({{#if params}}{{params}}{{/if}}) {
+    {{#if body}}
+    {{{body}}}
+    {{/if}}
+    {{#if emits}}
+    this.{{emits}}.emit({{#if args}}{{args}}{{/if}});
+    {{/if}}
+  }
+  {{/each}}
+
+  {{#if hasComputed}}
+  // Computed signals
+  {{#each computed}}
+  readonly {{name}} = computed(() => {
+    {{#if body}}
+    {{{body}}}
+    {{/if}}
+  });
+  {{/each}}
+  {{/if}}
+}

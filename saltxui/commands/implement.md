@@ -156,7 +156,139 @@ Build a mapping:
 - **Not found**: Will build custom from scratch
 - **Marked `[STYL]`**: Get from registry + apply custom Tailwind
 
-### Step 7: View Registry Component Details
+### Step 7: Discover Existing Components in Current Project
+
+Before adding components from the registry, discover what already exists in the current project:
+
+**Use Glob to search for existing component files:**
+
+```bash
+# Search for common component file patterns
+# Adjust based on detected framework
+
+# For React/Next.js/Remix/SolidJS:
+find . -name "*.tsx" -o -name "*.jsx" | grep -E "(components|ui)" | head -50
+
+# For Vue/Nuxt:
+find . -name "*.vue" | grep -E "(components|ui)" | head -50
+
+# For Svelte/SvelteKit:
+find . -name "*.svelte" | grep -E "(components|ui)" | head -50
+
+# For Angular:
+find . -name "*.ts" | grep -E "(component)" | grep -v ".spec." | head -50
+```
+
+**Analyze discovered components:**
+
+1. **Extract component names** from file paths:
+   - Remove file extensions
+   - Convert to consistent naming convention
+   - Build a list of existing component names
+
+2. **Categorize by type**:
+   - UI components (buttons, inputs, etc.)
+   - Layout components (containers, wrappers)
+   - Feature components (forms, cards)
+   - Business logic components
+
+3. **Build existing component registry**:
+```javascript
+existingComponents = {
+  button: { path: "apps/web/components/ui/Button.tsx", type: "ui" },
+  input: { path: "apps/web/components/ui/Input.tsx", type: "ui" },
+  "data-table": { path: "apps/web/components/table/DataTable.tsx", type: "feature" },
+  // ... more components
+}
+```
+
+**Compare with Figma components:**
+
+For each component from the Figma design:
+1. **Check if exists locally** (case-insensitive, partial matching)
+2. **Match against existing component registry**
+3. **Prioritization order**:
+   - **FIRST**: Existing local component (use instead of registry)
+   - **SECOND**: Registry component (if no local match)
+   - **LAST**: Custom build (if no local or registry match)
+
+**Create component sourcing map:**
+
+```
+Component: Button
+  → Found locally at: apps/web/components/ui/Button.tsx
+  → Decision: USE LOCAL (skip registry)
+
+Component: TextField
+  → Not found locally
+  → Found in registry: input
+  → Decision: USE REGISTRY
+
+Component: CustomDashboard
+  → Not found locally
+  → Not in registry
+  → Marker: [COMP]
+  → Decision: BUILD CUSTOM
+```
+
+**Update component mapping from Step 6:**
+
+```javascript
+// Before: Only considered registry
+componentMap = {
+  button: "registry",
+  input: "registry",
+  custom-widget: "custom"
+}
+
+// After: Prioritizes existing local components
+componentMap = {
+  button: "local",           // Changed: Use existing local component
+  input: "registry",         // Same: No local match, use registry
+  "custom-widget": "custom"  // Same: Build custom
+}
+```
+
+**Show discovery summary to user:**
+
+```
+Discovery Results:
+
+Found 25 existing components in current project:
+- Button (ui)
+- Input (ui)
+- Card (feature)
+- Modal (ui)
+- ... 21 more
+
+Figma components (8):
+✓ Button - USE LOCAL (apps/web/components/ui/Button.tsx)
+✓ Input - USE LOCAL (apps/web/components/ui/Input.tsx)
+→ TextField - USE REGISTRY (input)
+→ Checkbox - USE REGISTRY (checkbox)
+→ CustomWidget - BUILD CUSTOM [COMP]
+→ Badge - BUILD CUSTOM [COMP] (not in registry)
+→ Label - USE REGISTRY (label)
+→ Divider - USE REGISTRY (divider)
+
+Summary:
+- 2 components from local project
+- 4 components from registry
+- 2 components to build custom
+
+Proceed with implementation?
+```
+
+**Benefits of this approach:**
+
+1. **Avoids duplicates** - Won't re-add components that already exist
+2. **Consistency** - Uses existing project's component variants
+3. **Faster** - Skips unnecessary registry downloads
+4. **Context-aware** - Respects project's existing design system
+
+### Step 8: View Registry Component Details
+
+For components that will be sourced from the registry (not local):
 
 Before adding, inspect components found in registry:
 
@@ -205,18 +337,38 @@ Proceed? (y/n)
 
 Use `AskUserQuestion` to get confirmation before proceeding.
 
-### Step 9: Add Registry Components
+### Step 10: Add Registry Components (Skip Local)
 
 Before generating custom code, install components found in registry:
 
+**IMPORTANT**: Skip components that already exist locally (from Step 7 discovery).
+
 Use `mcp__SaltxUI-MCP__add_items_from_registries` with:
+- Only components NOT found locally
 - Components that were found in registry search
 - Components without `[COMP]` marker (standard components)
 - Components with `[STYL]` marker (will be customized with Tailwind)
 
-This installs pre-built components from the registry, reducing custom code generation.
+This installs pre-built components from the registry, reducing custom code generation while avoiding duplicates of existing local components.
 
-### Step 10: Generate Custom Component Code
+**Example of what to skip:**
+
+```javascript
+// From Step 7 discovery results
+skipComponents = [
+  "button",  // Found locally at apps/web/components/ui/Button.tsx
+  "input",   // Found locally at apps/web/components/ui/Input.tsx
+]
+
+// Only add these from registry
+addFromRegistry = [
+  "textfield",  // Not found locally, in registry
+  "checkbox",   // Not found locally, in registry
+  "label",      // Not found locally, in registry
+]
+```
+
+### Step 11: Generate Custom Component Code
 
 For components marked `[COMP]` or not found in registry:
 
@@ -229,7 +381,7 @@ Delegate to the Component Implementation Agent by reading its instructions and f
 5. Use appropriate file extensions (.tsx, .jsx, .vue, .svelte, etc.)
 6. Apply Tailwind classes from YAML for `[STYL]` components
 
-### Step 11: Install Dependencies
+### Step 12: Install Dependencies
 
 After component creation:
 - Identify new dependencies from generated code
@@ -238,7 +390,7 @@ After component creation:
 - Ask for confirmation before installing
 - Run install command if confirmed
 
-### Step 12: Generate Storybook (Optional)
+### Step 13: Generate Storybook (Optional)
 
 Use `AskUserQuestion` to prompt the user:
 
@@ -262,14 +414,14 @@ If user chooses to skip:
 - Note that Storybook can be added later
 - Provide guidance on manual Storybook setup if needed
 
-### Step 13: Run Verification
+### Step 14: Run Verification
 
 After implementation:
 - Verify all files exist
 - Check for syntax errors
 - Show summary of created files
 
-### Step 14: Show Final Summary
+### Step 15: Show Final Summary
 
 Created files:
 - apps/web/components/login-form/LoginForm.tsx

@@ -71,7 +71,7 @@ FILE_SIZE=$(stat -f%z <yaml-file-path> 2>/dev/null || stat -c%s <yaml-file-path>
 # Get line count
 LINE_COUNT=$(wc -l < <yaml-file-path> 2>/dev/null)
 
-# Raw YAML files can be up to 100,000 lines
+# Raw YAML files can be 100,000+ lines (unbounded)
 # If file > 100KB OR > 10,000 lines, use Grep-first chunked reading
 if [ $FILE_SIZE -gt 102400 ] || [ $LINE_COUNT -gt 10000 ]; then
   echo "Large file detected (${FILE_SIZE} bytes, ${LINE_COUNT} lines). Using Grep-first chunked reading."
@@ -452,12 +452,13 @@ Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1501, limit=500)
 
 **Optimized chunk sizes for large files:**
 
-For files with different scales:
+For files with different scales (raw YAML can be 100,000+ lines):
 - **< 10,000 lines**: Use 500-line chunks
 - **10,000 - 50,000 lines**: Use 1,000-line chunks
 - **50,000 - 100,000 lines**: Use 2,000-line chunks
+- **100,000+ lines**: Use 5,000-line chunks
 
-Adaptive chunking reduces number of iterations while maintaining memory efficiency.
+Adaptive chunking reduces number of iterations while maintaining memory efficiency for extremely large files.
 
 **Reading large implementation files:**
 

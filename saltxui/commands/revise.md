@@ -62,18 +62,24 @@ Validate the YAML file:
 
 ### Step 2: Determine Reading Strategy
 
-Check file size to decide reading approach:
+Check file size and line count to decide reading approach:
 
 ```bash
 # Get file size in bytes
 FILE_SIZE=$(stat -f%z <yaml-file-path> 2>/dev/null || stat -c%s <yaml-file-path> 2>/dev/null)
 
-# If file > 100KB, use chunked reading
-if [ $FILE_SIZE -gt 102400 ]; then
-  echo "Large file detected (${FILE_SIZE} bytes). Using chunked reading."
+# Get line count
+LINE_COUNT=$(wc -l < <yaml-file-path> 2>/dev/null)
+
+# Raw YAML files can be up to 100,000 lines
+# If file > 100KB OR > 10,000 lines, use Grep-first chunked reading
+if [ $FILE_SIZE -gt 102400 ] || [ $LINE_COUNT -gt 10000 ]; then
+  echo "Large file detected (${FILE_SIZE} bytes, ${LINE_COUNT} lines). Using Grep-first chunked reading."
   USE_CHUNKED=true
+  USE_GREP_FIRST=true
 else
   USE_CHUNKED=false
+  USE_GREP_FIRST=false
 fi
 ```
 
@@ -444,20 +450,30 @@ Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1501, limit=500)
 3. Reconstruct full structure after all chunks read
 4. Process comparisons after complete tree built
 
+**Optimized chunk sizes for large files:**
+
+For files with different scales:
+- **< 10,000 lines**: Use 500-line chunks
+- **10,000 - 50,000 lines**: Use 1,000-line chunks
+- **50,000 - 100,000 lines**: Use 2,000-line chunks
+
+Adaptive chunking reduces number of iterations while maintaining memory efficiency.
+
 **Reading large implementation files:**
 
-Same chunked approach for large source files:
-- Read in 500-line chunks
-- Identify sections needing revision
-- Apply targeted edits
+Same Grep-first chunked approach for large source files:
+- Use Grep to locate sections needing revision
+- Read in appropriate chunk size based on file scale
+- Apply targeted edits using `Edit` tool
 - Verify each chunk independently
 
 ## Configuration
 
 Read settings from `.claude/implement.local.md` if it exists:
 - `auto_fix`: Automatically apply fixes without confirmation
-- `chunk_size`: Lines per chunk (default: 500)
+- `chunk_size`: Lines per chunk (default: 500, auto-scales for large files)
 - `max_file_size`: Threshold for chunked reading in KB (default: 100)
+- `max_line_count`: Threshold for line count in lines (default: 10,000)
 - `dry_run`: Show changes without applying
 
 ## Example Usage

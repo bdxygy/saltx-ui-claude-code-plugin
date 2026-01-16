@@ -62,37 +62,34 @@ Validate the YAML file:
 
 ### Step 2: Determine Reading Strategy
 
-Check file size and line count to decide reading approach:
+Use the detect-lines script to analyze file characteristics and determine optimal reading strategy:
 
 ```bash
-# Get file size in bytes
-FILE_SIZE=$(stat -f%z <yaml-file-path> 2>/dev/null || stat -c%s <yaml-file-path> 2>/dev/null)
+# Run detect-lines script to get file analysis
+eval "$(saltxui/scripts/detect-lines.sh <yaml-file-path> | grep '^FILE_SIZE\|^LINE_COUNT\|^USE_CHUNKED\|^USE_GREP_FIRST\|^CHUNK_SIZE\|^STRATEGY_REASON=')"
 
-# Get line count
-LINE_COUNT=$(wc -l < <yaml-file-path> 2>/dev/null)
-
-# Raw YAML files can be 100,000+ lines (unbounded)
-# If file > 100KB OR > 10,000 lines, use Grep-first chunked reading
-if [ $FILE_SIZE -gt 102400 ] || [ $LINE_COUNT -gt 10000 ]; then
-  echo "Large file detected (${FILE_SIZE} bytes, ${LINE_COUNT} lines). Using Grep-first chunked reading."
-  USE_CHUNKED=true
-  USE_GREP_FIRST=true
-else
-  USE_CHUNKED=false
-  USE_GREP_FIRST=false
-fi
+# The script outputs:
+# - FILE_SIZE: File size in bytes
+# - LINE_COUNT: Number of lines in file
+# - USE_CHUNKED: Whether to use chunked reading (true/false)
+# - USE_GREP_FIRST: Whether to use Grep-first approach (true/false)
+# - CHUNK_SIZE: Recommended chunk size (500-2500 lines)
+# - STRATEGY_REASON: Human-readable reason for strategy
 ```
 
 **Reading strategies:**
 
 **Small files (< 100KB):**
+- `USE_CHUNKED=false`
 - Read entire file at once using `Read` tool
 - Parse complete YAML structure
 - Process all components in memory
 
 **Large files (>= 100KB):**
+- `USE_CHUNKED=true`
+- `USE_GREP_FIRST=true`
 - Use chunked reading with `Read` tool + `offset` + `limit`
-- Read YAML section by section (e.g., 500 lines at a time)
+- Read YAML section by section using `CHUNK_SIZE` from script
 - Process each chunk before reading next
 - Track position between chunks
 
@@ -106,11 +103,11 @@ Read the complete YAML file at <yaml-file-path>
 **For large files, use chunked reading:**
 
 ```bash
-# Read file in chunks of 500 lines
-CHUNK_SIZE=500
-TOTAL_LINES=$(wc -l < <yaml-file-path>)
+# Use CHUNK_SIZE and LINE_COUNT from detect-lines script
+# CHUNK_SIZE is already set based on file scale (500-2500)
+# LINE_COUNT is already set from the script output
 
-for offset in $(seq 1 $CHUNK_SIZE $TOTAL_LINES); do
+for offset in $(seq 1 $CHUNK_SIZE $LINE_COUNT); do
   # Read chunk
   Read <yaml-file-path> with offset=$offset limit=$CHUNK_SIZE
 
@@ -120,13 +117,14 @@ for offset in $(seq 1 $CHUNK_SIZE $TOTAL_LINES); do
   - Build partial component structure
 
   # Track progress
-  echo "Processed lines $offset to $((offset + CHUNK_SIZE - 1)) of $TOTAL_LINES"
+  echo "Processed lines $offset to $((offset + CHUNK_SIZE - 1)) of $LINE_COUNT"
 done
 ```
 
 **Chunked reading guidelines:**
-- Start with `offset=1`, `limit=500`
-- Increment offset by limit for each chunk
+- Start with `offset=1`, `limit=$CHUNK_SIZE`
+- `CHUNK_SIZE` is adaptive based on file scale from detect-lines script
+- Increment offset by CHUNK_SIZE for each chunk
 - Stop when chunk returns fewer lines than limit
 - Reconstruct component hierarchy across chunks
 
@@ -394,28 +392,29 @@ From Grep results, determine which chunks to read:
 ```bash
 # Grep shows matches at lines: 150-165, 423-445, 890-912
 
-# Calculate which chunks contain these lines:
-# Chunk 1 (lines 1-500): Read for matches at 150-165
-# Chunk 2 (lines 501-1000): Read for matches at 423-445
-# Chunk 3 (lines 1001-1500): Skip (no matches in this range)
-# Chunk 4 (lines 1501-2000): Read for matches at 890-912
+# Calculate which chunks contain these lines (using CHUNK_SIZE from detect-lines script):
+# Example: CHUNK_SIZE=500
+# - Chunk 1 (lines 1-500): Read for matches at 150-165
+# - Chunk 2 (lines 501-1000): Read for matches at 423-445
+# - Chunk 3 (lines 1001-1500): Skip (no matches in this range)
+# - Chunk 4 (lines 1501-2000): Read for matches at 890-912
 ```
 
 **Step 3: Read Only Relevant Chunks**
 
 ```
 # Read chunk 1 (contains match at 150-165)
-Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1, limit=500)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1, limit=$CHUNK_SIZE)
   → Extract lines 140-170 (include context around match)
 
 # Read chunk 2 (contains match at 423-445)
-Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=501, limit=500)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=$CHUNK_SIZE, limit=$CHUNK_SIZE)
   → Extract lines 418-450 (include context around match)
 
 # Skip chunk 3 (no matches)
 
 # Read chunk 4 (contains match at 890-912)
-Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1501, limit=500)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=$((CHUNK_SIZE * 3)), limit=$CHUNK_SIZE)
   → Extract lines 885-920 (include context around match)
 ```
 
@@ -429,19 +428,19 @@ Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1501, limit=500)
 
 If Grep returns too many results or pattern is too broad:
 ```
-# Example: Reading entire file in 500-line chunks (fallback method)
+# Example: Reading entire file in $CHUNK_SIZE-line chunks (fallback method)
 
-Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1, limit=500)
-  → Lines 1-500 (Wrapper component, Banner start)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1, limit=$CHUNK_SIZE)
+  → Lines 1-$CHUNK_SIZE (Wrapper component, Banner start)
 
-Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=501, limit=500)
-  → Lines 501-1000 (Banner end, Container start)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=$((CHUNK_SIZE + 1)), limit=$CHUNK_SIZE)
+  → Lines $((CHUNK_SIZE + 1))-$((CHUNK_SIZE * 2)) (Banner end, Container start)
 
-Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1001, limit=500)
-  → Lines 1001-1500 (Container children)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=$((CHUNK_SIZE * 2 + 1)), limit=$CHUNK_SIZE)
+  → Lines $((CHUNK_SIZE * 2 + 1))-$((CHUNK_SIZE * 3)) (Container children)
 
-Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=1501, limit=500)
-  → Lines 1501-2000 (remaining components)
+Read(file_path=".salt-ui/figma/xyz/123_raw.yaml", offset=$((CHUNK_SIZE * 3 + 1)), limit=$CHUNK_SIZE)
+  → Lines $((CHUNK_SIZE * 3 + 1))-$((CHUNK_SIZE * 4)) (remaining components)
 ```
 
 **Processing strategy across chunks:**

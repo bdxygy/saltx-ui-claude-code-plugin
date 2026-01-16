@@ -1,6 +1,6 @@
 ---
 name: revise
-description: Revise UI implementation by comparing against raw Figma YAML file, handling large files with chunked reading
+description: Increase precision and fix UI implementations by comparing against raw Figma YAML file, handling large files with chunked reading
 argument-hint: --section <section> [--component <component-name>] [--fix-style]
 allowed-tools:
   - Read
@@ -10,7 +10,13 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-You are the `/revise` command that fixes UI implementations that don't match the Figma design by referencing the raw YAML file response.
+You are the `/revise` command that increases precision and fixes UI implementations by referencing the raw YAML file response.
+
+**Purpose:** Make implementations maximally accurate to the original Figma design by:
+1. **Fixing mismatches** - Correcting wrong implementations (wrong text, missing structure, incorrect markers)
+2. **Increasing precision** - Adding missing details from raw YAML (Tailwind classes, proper spacing, exact styling)
+
+**Why raw YAML?** The `_raw.yaml` files contain complete unprocessed Figma data including all properties, styles, and hierarchy. Processed `.yaml` files may omit details, while `_raw.yaml` provides the full source of truth for maximal precision.
 
 ## Trigger
 
@@ -144,25 +150,136 @@ fi
 - Stop when chunk returns fewer lines than limit
 - Reconstruct component hierarchy across chunks
 
-### Step 4: Parse YAML Structure
+### Step 4: Parse Raw YAML and Convert to Tailwind
 
-Extract from YAML (chunked or complete):
+Extract from raw YAML and convert ALL properties to Tailwind utility classes for maximal precision.
 
-For each component:
-- Component name (with markers: `[COMP]`, `[STYL]`, or none)
-- Tailwind classes in `tailwindcss:` array
-- Component hierarchy in `children:` array
-- Text content in `content_text:` fields
-- Nested structure with proper indentation
+**Raw YAML structure contains:**
 
-Build component tree:
+```yaml
+# Layout & Positioning
+absoluteBoundingBox:
+  x: 69
+  y: 66
+  width: 1512
+  height: 982
+constraints:
+  vertical: TOP
+  horizontal: LEFT
+
+# Typography (for TEXT nodes)
+style:
+  fontFamily: Roboto           → font-roboto
+  fontWeight: 700              → font-bold
+  fontSize: 60                 → text-[60px]
+  letterSpacing: -1.2          → tracking-[-1.2px]
+  lineHeightPx: 72             → leading-[72px]
+  textAlignHorizontal: LEFT    → text-left
+  textAlignVertical: TOP       → align-top
+characters: 'Sign In'          → Text content
+
+# Colors & Fills
+fills:
+  - color:
+      r: 1
+      g: 0
+      b: 0
+      a: 1                    → text-[#ff0000] or bg-[#ff0000]
+
+# Borders & Corner Radius
+strokes:
+  - color: {...}
+strokeWeight: 1                → border-[1px]
+strokeAlign: INSIDE            → (convert to border utilities)
+boundVariables:
+  rectangleCornerRadii:
+    RECTANGLE_TOP_LEFT_CORNER_RADIUS: {...}
+                              → rounded-[24px] or from variable value
+
+# Spacing & Gaps
+# (from layout calculations between children)
+                              → gap-[4px], p-[10px], m-[20px]
+
+# Effects
+effects:
+  - type: DROP_SHADOW
+    color: {...}
+    radius: 4                  → shadow-md, shadow-lg
+    offset: {...}
+    visible: true
+
+# Display & Layout
+type: FRAME                    → (determine flex/block from children)
+scrollBehavior: SCROLLS        → (overflow handling)
+```
+
+**Conversion strategy:**
+
+For each raw YAML node, extract and convert:
+
+1. **Component metadata:**
+   - `name` → Component name (with markers `[COMP]`, `[STYL]`)
+   - `type` → Determines element type (FRAME → div, TEXT → p/span)
+   - `id` → Internal reference
+
+2. **Layout properties → Tailwind:**
+   - `absoluteBoundingBox.width` → `w-[1512px]`
+   - `absoluteBoundingBox.height` → `h-[982px]`
+   - `absoluteBoundingBox.x` → `left-[69px]` or `ml-[69px]`
+   - `absoluteBoundingBox.y` → `top-[66px]` or `mt-[66px]`
+   - `constraints.vertical` → (determine vertical alignment)
+   - `constraints.horizontal` → (determine horizontal alignment)
+
+3. **Typography → Tailwind:**
+   - `style.fontFamily` → `font-roboto`, `font-inter`
+   - `style.fontWeight` → `font-thin` (100) through `font-black` (900)
+   - `style.fontSize` → `text-[60px]`
+   - `style.letterSpacing` → `tracking-[-1.2px]`
+   - `style.lineHeightPx` → `leading-[72px]`
+   - `style.textAlignHorizontal` → `text-left`, `text-center`, `text-right`
+   - `style.textAlignVertical` → `align-top`, `align-middle`, `align-bottom`
+   - `characters` → Text content
+
+4. **Colors → Tailwind:**
+   - `fills[0].color.rgba` → `text-[rgba(r,g,b,a)]` or `bg-[rgba(r,g,b,a)]`
+   - `strokes[0].color.rgba` → `border-[rgba(r,g,b,a)]`
+
+5. **Borders → Tailwind:**
+   - `strokeWeight` → `border-[1px]`, `border-[2px]`
+   - `strokeAlign` → (determine border positioning)
+   - `boundVariables.rectangleCornerRadii` → `rounded-[24px]`
+
+6. **Spacing → Tailwind:**
+   - Calculate from child positions → `gap-[4px]`, `gap-[16px]`
+   - Padding from content bounds → `p-[10px]`, `px-4`, `py-2`
+   - Margins from position offsets → `m-[20px]`, `mx-auto`
+
+7. **Effects → Tailwind:**
+   - `effects[].type === DROP_SHADOW` → `shadow-md`, `shadow-lg`, `shadow-xl`
+   - `effects[].radius` → (determine shadow scale)
+   - `effects[].visible` → (only include if true)
+
+8. **Display → Tailwind:**
+   - `type === FRAME` with multiple children → `flex`
+   - Children arranged vertically → `flex-col`
+   - Children arranged horizontally → `flex-row`
+   - `scrollBehavior === SCROLLS` → `overflow-auto` or `overflow-scroll`
+
+Build component tree with extracted Tailwind:
 ```
 ComponentTree {
-  name: string
+  name: string                    // from name field
   marker: "[COMP]" | "[STYL]" | none
-  tailwind: string[]
+  type: "FRAME" | "TEXT" | "RECTANGLE"  // from type field
+  tailwind: string[]              // ALL converted properties
+  rawProps: {                     // Keep raw props for reference
+    width: number
+    height: number
+    fontSize: number
+    // ... other raw values
+  }
   children: ComponentTree[]
-  textContent: string
+  textContent: string             // from characters field
 }
 ```
 
@@ -233,27 +350,31 @@ For each component from filtered list:
 
 3. **Compare with YAML specification:**
 
-   Check mismatches in:
-   - **Missing Tailwind classes**: Classes in YAML but not in code
-   - **Extra Tailwind classes**: Classes in code but not in YAML
-   - **Incorrect structure**: Component hierarchy doesn't match
-   - **Missing text content**: Text from YAML not in code
+   The goal is **maximal precision** - every detail from raw YAML should be reflected in implementation.
+
+   Check for:
+   - **Missing Tailwind classes**: Classes in YAML but not in code (increases precision)
+   - **Extra Tailwind classes**: Classes in code but not in YAML (fixes mismatch)
+   - **Incorrect structure**: Component hierarchy doesn't match (fixes mismatch)
+   - **Missing text content**: Text from YAML not in code (fixes mismatch)
+   - **Imprecise styling**: Using approximate values instead of exact YAML values (increases precision)
    - **Wrong marker handling**:
-     - `[COMP]` should be custom implementation
-     - `[STYL]` should have custom Tailwind
-     - No marker should use registry component as-is
+     - `[COMP]` should be custom implementation (fixes mismatch)
+     - `[STYL]` should have custom Tailwind from YAML (increases precision)
+     - No marker should use registry component as-is (fixes mismatch)
 
 4. **Generate diff report:**
 
 ```
 Component: Button
-Status: MISMATCH
+Status: NEEDS REVISION
 
-Issues:
-- Missing Tailwind: rounded-[40px], flex, items-center
-- Extra Tailwind: bg-blue-500 (not in YAML)
-- Text mismatch: YAML says "Sign In", code says "Submit"
-- Marker issue: Component marked [STYL] but using registry without customization
+Changes needed:
+- Add missing Tailwind: rounded-[40px], flex, items-center, justify-center
+- Remove extra Tailwind: bg-blue-500 (not in YAML)
+- Fix text: "Submit" → "Sign In"
+- Fix marker: Component marked [STYL] but missing custom Tailwind classes
+- Increase precision: Use exact spacing values from YAML instead of approximations
 ```
 
 ### Step 7: Show Diff and Confirm
@@ -292,24 +413,24 @@ For each component marked for revision:
 
 **Revision types:**
 
-**Fix Tailwind classes:**
+**1. Fix Tailwind classes (correct errors + add missing):**
 ```typescript
-// Before
+// Before (incorrect + incomplete)
 className="bg-blue-500 text-white px-4 py-2"
 
-// After (from YAML)
-className="bg-red-500 text-white rounded-[40px] flex justify-center items-center"
+// After (corrected from raw YAML - fixes wrong color, adds missing classes)
+className="bg-red-500 text-white rounded-[40px] flex justify-center items-center p-[10px]"
 ```
 
-**Fix component structure:**
+**2. Fix component structure (correct hierarchy):**
 ```tsx
-// Before (missing nested child)
+// Before (missing nested child, wrong spacing)
 <div>
   <Label>Email</Label>
   <Input />
 </div>
 
-// After (from YAML with proper hierarchy)
+// After (from raw YAML with proper hierarchy + exact spacing)
 <div className="flex flex-col gap-[4px]">
   <Label>Email *</Label>
   <Input placeholder="something@mail.com" />
@@ -317,20 +438,29 @@ className="bg-red-500 text-white rounded-[40px] flex justify-center items-center
 </div>
 ```
 
-**Fix text content:**
+**3. Fix text content (correct text):**
 ```tsx
 // Before
 <Button>Submit</Button>
 
-// After (from YAML)
+// After (from raw YAML)
 <Button>Sign In</Button>
 ```
 
-**Apply [STYL] marker customization:**
+**4. Increase precision (use exact values from raw YAML):**
+```tsx
+// Before (approximate values)
+<div className="p-4 rounded-lg gap-2">
+
+// After (exact values from raw YAML)
+<div className="p-[10px] rounded-[40px] gap-[4px]">
+```
+
+**5. Apply [STYL] marker customization (add custom styles):**
 For components marked `[STYL]`:
 - Get base component from registry (if exists)
-- Add custom Tailwind classes from YAML
-- Wrap or extend registry component with custom styles
+- Add ALL custom Tailwind classes from raw YAML (not just some)
+- Wrap or extend registry component with exact styles from YAML
 
 ### Step 9: Verify Revisions
 

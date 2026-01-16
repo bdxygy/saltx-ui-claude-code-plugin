@@ -319,13 +319,190 @@ blendMode: PASS_THROUGH
 # ===== CLIPPING =====
 clipsContent: true               # → overflow-hidden
 
-# ===== VARIABLES =====
+# ===== VARIABLES & DESIGN TOKENS =====
 boundVariables:
   fills:
     - type: VARIABLE_ALIAS
       id: VariableID:...
+  strokes:
+    - type: VARIABLE_ALIAS
+  color:
+    - type: VARIABLE_ALIAS
+  paddingLeft:
+    - type: VARIABLE_ALIAS
+  paddingRight:
+    - type: VARIABLE_ALIAS
+  paddingTop:
+    - type: VARIABLE_ALIAS
+  paddingBottom:
+    - type: VARIABLE_ALIAS
+  itemSpacing:
+    - type: VARIABLE_ALIAS
+  rectangleCornerRadii:
+    RECTANGLE_TOP_LEFT_CORNER_RADIUS:
+      type: VARIABLE_ALIAS
+    RECTANGLE_TOP_RIGHT_CORNER_RADIUS:
+      type: VARIABLE_ALIAS
+    RECTANGLE_BOTTOM_LEFT_CORNER_RADIUS:
+      type: VARIABLE_ALIAS
+    RECTANGLE_BOTTOM_RIGHT_CORNER_RADIUS:
+      type: VARIABLE_ALIAS
 explicitVariableModes:
   VariableCollectionId:...: '425:1'
+
+# ===== STYLE INHERITANCE =====
+inheritFillStyleId: '756:20'          # Reference to fill style
+inheritTextStyleId: '756:21'           # Reference to text style
+
+# ===== TRANSITIONS & ANIMATIONS =====
+transitionNodeID: '756:399'            # Target node for transition
+transitionDuration: 300                # Duration in milliseconds
+transitionEasing: EASE_OUT             # Easing function: EASE_OUT, EASE_IN, EASE_IN_OUT, LINEAR
+
+# ===== PROTOTYPE INTERACTIONS =====
+interactions:
+  - trigger:
+      type: ON_HOVER                   # ON_HOVER, ON_CLICK, MOUSE_PRESS, MOUSE_ENTER
+    actions:
+      - type: NODE                     # NODE, BACK, NAVIGATE, URL
+        destinationId: '756:399'
+        navigation: CHANGE_TO          # CHANGE_TO, PUSH, NAVIGATE, OVERLAY
+        transition:
+          duration: 300
+          easing: EASE_OUT
+          direction: RIGHT             # LEFT, RIGHT, UP, DOWN, NONE
+
+# ===== COMPONENT REFERENCES =====
+componentId: '756:50'                  # Reference to main component
+componentSetId: '756:29'               # Parent component set (for variants)
+remote: true                          # Component from external library
+description: 'Component description'
+documentationLinks: []
+
+# ===== COMPONENT PROPERTIES =====
+componentProperties:
+  PropertyName#ID:
+    type: TEXT                         # TEXT, BOOLEAN, INSTANCE_SWAP, VARIANT
+    value: "actual value"
+    preferredValues:
+      - type: COMPONENT
+        key: cda366feac51fd917348cf05514151fa36a252b3
+
+# ===== DYNAMIC PROPERTY BINDINGS =====
+componentPropertyReferences:
+  visible: show-property#ID            # Links visible to boolean property
+  characters: PropertyName#ID          # Links text to text property
+  mainComponent: icon-property#ID      # Links to instance swap property
+
+# ===== INSTANCE OVERRIDES =====
+overrides:
+  - id: '782:27549'
+    overriddenFields:
+      - strokeWeight
+      - strokes
+      - fills
+      - inheritFillStyleId
+      - componentProperties
+
+# ===== ADVANCED TYPOGRAPHY =====
+textTruncation: ENDING                 # ENDING, DISABLED
+maxLines: 1                            # Maximum lines before truncation
+paragraphSpacing: 14                   # Space between paragraphs (px)
+lineHeightPercentFontSize: 117         # Line height as % of font size
+lineHeightUnit: INTRINSIC_%           # PIXELS, INTRINSIC_%
+fontPostScriptName: Roboto-Medium     # Exact font name
+fontStyle: Medium                      # Regular, Medium, SemiBold, Bold
+textAutoResize: WIDTH_AND_HEIGHT      # NONE, WIDTH_AND_HEIGHT, HEIGHT
+
+# ===== TEXT STYLE OVERRIDES =====
+characterStyleOverrides: []            # Array of style override indices
+styleOverrideTable: {}                 # Mapping of override indices to styles
+lineTypes:
+  - NONE                               # Line-by-line type settings
+lineIndentations:
+  - 0                                  # Line-by-line indentation (px)
+
+# ===== ADVANCED STROKE PROPERTIES =====
+strokeJoin: ROUND                      # MITER, ROUND, BEVEL
+strokeCap: ROUND                       # ROUND, SQUARE, NONE, NONE (for lines)
+strokeAlign: INSIDE                    # INSIDE, OUTSIDE, CENTER
+individualStrokeWeights:
+  top: 0
+  right: 1
+  bottom: 1
+  left: 0
+
+# ===== GRADIENTS =====
+gradientHandlePositions:               # Array of {x, y} for gradient direction
+  - x: 0.5
+    'y': -0.5
+  - x: 0.5
+    'y': 0.5
+gradientStops:                         # Gradient color stops
+  - color: {r, g, b, a}
+    position: 0                         # 0-1 position
+  - color: {r, g, b, a}
+    position: 1
+
+# ===== IMAGES =====
+imageRef: 740bff32e943778f002f5a7afa00781216286ab6  # Image asset hash
+imageTransform:                        # 2D transformation matrix [[a,b,c],[d,e,f]]
+  - - 0.2050781399011612
+    - 0
+    - 0.23828125
+  - - 0
+    - 0.2050781399011612
+    - 0
+scaleMode: FILL                        # FILL, FIT, CROP, TILE
+
+# ===== BOUNDING BOXES =====
+absoluteRenderBounds:                  # Actual rendered bounds (after clipping/masks)
+  x: 69
+  'y': 66
+  width: 1510
+  height: 980
+
+# ===== ELLIPSE/ARC PROPERTIES =====
+arcData:
+  startingAngle: 0                     # Start angle in radians
+  endingAngle: 6.2831854820251465      # End angle in radians (2π = full circle)
+  innerRadius: 0                       # For donut charts
+
+# ===== ADVANCED LAYOUT =====
+cornerRadius: [4, 4, 4, 4]            # Individual corners: [tl, tr, br, bl]
+cornerSmoothing: 0                     # 0-1, smoothness of rounded corners
+minWidth: 100                          # Minimum width constraint
+minHeight: 40                          # Minimum height constraint
+
+# ===== SCROLL BEHAVIOR =====
+scrollBehavior: SCROLLS                # SCROLLS, SCROLLS_AND_PIN, FIXED
+
+# ===== BACKGROUND =====
+background:                            # Background fills (separate from main fills)
+  - blendMode: NORMAL
+    type: SOLID
+    color: {...}
+backgroundColor:
+  r: 0
+  g: 0
+  b: 0
+  a: 0
+
+# ===== BLEND MODES =====
+blendMode: PASS_THROUGH                # PASS_THROUGH, NORMAL, MULTIPLY, SCREEN, OVERLAY
+
+# ===== EFFECTS =====
+showShadowBehindNode: false            # Render shadow behind element
+
+# ===== PROTOTYPE SETTINGS =====
+prototypeStartNodeID: null             # Starting frame for prototype
+flowStartingPoints: []                 # Array of flow entry points
+prototypeDevice:
+  type: NONE                           # NONE, iPhone, DESKTOP, etc.
+  rotation: NONE                       # NONE, PORTRAIT, LANDSCAPE_LEFT, etc.
+
+# ===== LAYOUT VERSION =====
+layoutVersion: 5                       # Figma layout engine version
 ```
 
 **Complete conversion strategy - convert EVERY property:**

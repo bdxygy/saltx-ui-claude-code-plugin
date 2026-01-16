@@ -150,137 +150,312 @@ fi
 - Stop when chunk returns fewer lines than limit
 - Reconstruct component hierarchy across chunks
 
-### Step 4: Parse Raw YAML and Convert to Tailwind
+### Step 4: Parse Raw YAML and Convert ALL Properties to Tailwind
 
-Extract from raw YAML and convert ALL properties to Tailwind utility classes for maximal precision.
+Extract from raw YAML and convert **ALL** properties to Tailwind utility classes for maximal precision.
 
-**Raw YAML structure contains:**
+**Raw YAML contains 100+ properties - convert EVERYTHING possible:**
 
 ```yaml
-# Layout & Positioning
+# ===== NODE METADATA =====
+id: '782:27465'                  # Unique node identifier
+name: Container [COMP]           # Component name with markers [COMP], [STYL]
+type: FRAME                       # FRAME, TEXT, RECTANGLE, ELLIPSE, VECTOR, LINE, INSTANCE, CANVAS
+scrollBehavior: SCROLLS           # SCROLLS, SCROLLS_AND_PIN
+
+# ===== LAYOUT & POSITIONING =====
 absoluteBoundingBox:
+  x: 69                          → absolute-x-[69px]
+  y: 66                          → absolute-y-[66px]
+  width: 1512                    → w-[1512px]
+  height: 982                    → h-[982px]
+
+absoluteRenderBounds:             # Actual rendered bounds (may differ)
   x: 69
   y: 66
-  width: 1512
-  height: 982
+  width: 1510
+  height: 980
+
+targetAspectRatio:
+  x: 24
+  y: 24                          → aspect-[24/24]
+
 constraints:
-  vertical: TOP
-  horizontal: LEFT
+  vertical: TOP                   # TOP, BOTTOM, CENTER, SCALE, STRETCH
+  horizontal: LEFT               # LEFT, RIGHT, CENTER, SCALE, STRETCH
 
-# Typography (for TEXT nodes)
-style:
-  fontFamily: Roboto           → font-roboto
-  fontWeight: 700              → font-bold
-  fontSize: 60                 → text-[60px]
-  letterSpacing: -1.2          → tracking-[-1.2px]
-  lineHeightPx: 72             → leading-[72px]
-  textAlignHorizontal: LEFT    → text-left
-  textAlignVertical: TOP       → align-top
-characters: 'Sign In'          → Text content
+# ===== AUTO LAYOUT =====
+layoutMode: HORIZONTAL            # NONE, HORIZONTAL, VERTICAL → flex, flex-row, flex-col
+layoutAlign: INHERIT              # INHERIT, STRETCH → items-stretch
+layoutGrow: 1                     # 0 or 1 → flex-grow or flex-grow-0
+layoutPositioning: ABSOLUTE       # ABSOLUTE
+layoutSizingHorizontal: FILL      # FIXED, HUG, FILL → w-auto, flex-1
+layoutSizingVertical: HUG         # FIXED, HUG, FILL → h-auto
+primaryAxisSizingMode: FIXED      # FIXED, HUG, FILL
+counterAxisSizingMode: FIXED      # FIXED, HUG, FILL
+primaryAxisAlignItems: MIN        # MIN, CENTER, MAX, SPACE_BETWEEN
+counterAxisAlignItems: CENTER     # MIN, CENTER, MAX, BASELINE
+layoutWrap: NO_WRAP               # NO_WRAP, WRAP → flex-nowrap, flex-wrap
+itemSpacing: 8                   → gap-[8px]
 
-# Colors & Fills
+# ===== PADDING =====
+paddingLeft: 12                  → pl-[12px]
+paddingRight: 12                 → pr-[12px]
+paddingTop: 8                    → pt-[8px]
+paddingBottom: 8                 → pb-[8px]
+
+# ===== BORDERS & STROKES =====
+strokeWeight: 1                  → border-[1px]
+strokeAlign: INSIDE              # INSIDE, OUTSIDE, CENTER
+strokeJoin: ROUND                # MITER, ROUND, BEVEL
+strokeCap: ROUND                 # NONE, ROUND, SQUARE
+individualStrokeWeights:
+  top: 0
+  right: 0
+  bottom: 1
+  left: 0                        → border-b-[1px]
+
+# ===== CORNER RADIUS =====
+cornerRadius: 4                  → rounded-[4px]
+cornerSmoothing: 0               # 0-1
+
+# ===== FILLS & COLORS =====
 fills:
-  - color:
+  - blendMode: NORMAL            # PASS_THROUGH, NORMAL, MULTIPLY, SCREEN
+    type: SOLID                  # SOLID, GRADIENT_LINEAR, GRADIENT_RADIAL, IMAGE
+    visible: true
+    color:
       r: 1
-      g: 0
-      b: 0
-      a: 1                    → text-[#ff0000] or bg-[#ff0000]
+      g: 1
+      b: 1
+      a: 1                       → bg-white or bg-[#ffffff]
+    opacity: 1                    # 0-1 → bg-opacity-100
 
-# Borders & Corner Radius
-strokes:
-  - color: {...}
-strokeWeight: 1                → border-[1px]
-strokeAlign: INSIDE            → (convert to border utilities)
-boundVariables:
-  rectangleCornerRadii:
-    RECTANGLE_TOP_LEFT_CORNER_RADIUS: {...}
-                              → rounded-[24px] or from variable value
+  # GRADIENT_LINEAR
+  - type: GRADIENT_LINEAR
+    gradientHandlePositions:      # Array of {x, y} positions
+    gradientStops:
+      - color: {...}
+        position: 0
+      - color: {...}
+        position: 1
+    → bg-gradient-to-b from-[color1] to-[color2]
 
-# Spacing & Gaps
-# (from layout calculations between children)
-                              → gap-[4px], p-[10px], m-[20px]
+backgroundColor:
+  r: 0
+  g: 0
+  b: 0
+  a: 0                           → bg-transparent
 
-# Effects
+# ===== EFFECTS =====
 effects:
   - type: DROP_SHADOW
-    color: {...}
-    radius: 4                  → shadow-md, shadow-lg
-    offset: {...}
     visible: true
+    radius: 4                     → shadow-md
+    offset: {x: 0, y: 4}
+    color: {...}
 
-# Display & Layout
-type: FRAME                    → (determine flex/block from children)
-scrollBehavior: SCROLLS        → (overflow handling)
+  - type: LAYER_BLUR
+    radius: 300                   → blur-[300px]
+
+# ===== TRANSFORMS =====
+rotation: 1.57                   → rotate-[1.57rad] or rotate-90
+
+# ===== TYPOGRAPHY =====
+characters: 'Sign In'
+characterStyleOverrides: []
+styleOverrideTable: {}
+lineTypes:
+  - NONE
+lineIndentations:
+  - 0
+
+style:
+  fontFamily: Roboto             → font-roboto
+  fontWeight: 500                → font-medium
+  fontSize: 16                   → text-[16px]
+  textAlignHorizontal: LEFT      → text-left
+  textAlignVertical: TOP         → align-top
+  letterSpacing: 0               → tracking-normal
+  lineHeightPx: 20               → leading-[20px]
+  lineHeightPercent: 100
+  lineHeightUnit: PIXELS         # PIXELS, INTRINSIC_%
+  textAutoResize: WIDTH_AND_HEIGHT # NONE, WIDTH_AND_HEIGHT, HEIGHT
+
+textDecoration: NONE             # NONE, UNDERLINE, STRIKETHROUGH
+textCase: ORIGINAL               # ORIGINAL, UPPER, LOWER, TITLE
+
+# ===== VISIBILITY =====
+visible: true                    # false = hidden
+
+# ===== COMPONENT INSTANCES =====
+componentId: '756:88'
+componentProperties:
+  Title#60:80:
+    type: TEXT
+    value: Title
+  show-left-icon#60:35:
+    type: BOOLEAN
+    value: true
+  Variant:
+    type: VARIANT
+    value: Default
+
+overrides:
+  - id: I782:27503;60:7356;2:119
+    overriddenFields:
+      - strokeWeight
+
+# ===== STYLE REFERENCES =====
+styles:
+  fill: '756:20'
+  text: '756:21'
+  stroke: '756:22'
+  effect: '756:23'
+
+# ===== BLEND MODES =====
+blendMode: PASS_THROUGH
+
+# ===== CLIPPING =====
+clipsContent: true               # → overflow-hidden
+
+# ===== VARIABLES =====
+boundVariables:
+  fills:
+    - type: VARIABLE_ALIAS
+      id: VariableID:...
+explicitVariableModes:
+  VariableCollectionId:...: '425:1'
 ```
 
-**Conversion strategy:**
+**Complete conversion strategy - convert EVERY property:**
 
-For each raw YAML node, extract and convert:
+For **EACH** raw YAML node:
 
-1. **Component metadata:**
-   - `name` → Component name (with markers `[COMP]`, `[STYL]`)
-   - `type` → Determines element type (FRAME → div, TEXT → p/span)
+1. **Node metadata:**
+   - `name` → Component name (extract `[COMP]`, `[STYL]` markers)
+   - `type` → Element type: FRAME→div, TEXT→span, RECTANGLE→div, ELLIPSE→div, VECTOR→svg, LINE→hr
    - `id` → Internal reference
+   - `visible` → Skip if false
 
-2. **Layout properties → Tailwind:**
-   - `absoluteBoundingBox.width` → `w-[1512px]`
-   - `absoluteBoundingBox.height` → `h-[982px]`
-   - `absoluteBoundingBox.x` → `left-[69px]` or `ml-[69px]`
-   - `absoluteBoundingBox.y` → `top-[66px]` or `mt-[66px]`
-   - `constraints.vertical` → (determine vertical alignment)
-   - `constraints.horizontal` → (determine horizontal alignment)
+2. **Size & position:**
+   - `absoluteBoundingBox.width/height/x/y` → `w-[]`, `h-[]`, `absolute`, `left-[]`, `top-[]`
+   - `absoluteRenderBounds` → Use for actual rendered size
+   - `targetAspectRatio` → `aspect-[x/y]`
+   - `constraints.vertical/horizontal` → Constraints
 
-3. **Typography → Tailwind:**
+3. **Auto layout:**
+   - `layoutMode` → `flex`, `flex-row`, `flex-col`
+   - `layoutAlign` → `items-stretch`
+   - `layoutGrow` → `flex-grow` or `flex-grow-0`
+   - `layoutSizingHorizontal/Vertical` → `flex-1`, `w-auto`, `h-auto`
+   - `primaryAxisAlignItems` → `justify-start/center/end/between`
+   - `counterAxisAlignItems` → `items-start/center/end/baseline`
+   - `layoutWrap` → `flex-wrap` or `flex-nowrap`
+   - `itemSpacing` → `gap-[]`
+
+4. **Padding:**
+   - `paddingLeft/Right/Top/Bottom` → `pl-[]`, `pr-[]`, `pt-[]`, `pb-[]`
+
+5. **Typography:**
    - `style.fontFamily` → `font-roboto`, `font-inter`
-   - `style.fontWeight` → `font-thin` (100) through `font-black` (900)
-   - `style.fontSize` → `text-[60px]`
-   - `style.letterSpacing` → `tracking-[-1.2px]`
-   - `style.lineHeightPx` → `leading-[72px]`
-   - `style.textAlignHorizontal` → `text-left`, `text-center`, `text-right`
-   - `style.textAlignVertical` → `align-top`, `align-middle`, `align-bottom`
+   - `style.fontWeight` → `font-thin` through `font-black` (100-900)
+   - `style.fontSize` → `text-[]`
+   - `style.letterSpacing` → `tracking-[]`
+   - `style.lineHeightPx` → `leading-[]`
+   - `style.textAlignHorizontal` → `text-left/center/right`
+   - `style.textAlignVertical` → `align-top/middle/bottom`
+   - `style.textDecoration` → `underline`, `line-through`
+   - `style.textCase` → `uppercase`, `lowercase`, `capitalize`
    - `characters` → Text content
 
-4. **Colors → Tailwind:**
-   - `fills[0].color.rgba` → `text-[rgba(r,g,b,a)]` or `bg-[rgba(r,g,b,a)]`
-   - `strokes[0].color.rgba` → `border-[rgba(r,g,b,a)]`
+6. **Colors:**
+   - `fills[0].color.rgba` → Convert to hex → `text-[#fff]` or `bg-[#fff]`
+   - `fills[0].opacity` → `bg-opacity-[]`
+   - `fills[0].type === GRADIENT_LINEAR` → `bg-gradient-to-[] from-[] to-[]`
+   - `backgroundColor` → Background color
 
-5. **Borders → Tailwind:**
-   - `strokeWeight` → `border-[1px]`, `border-[2px]`
-   - `strokeAlign` → (determine border positioning)
-   - `boundVariables.rectangleCornerRadii` → `rounded-[24px]`
+7. **Borders:**
+   - `strokeWeight` → `border-[]`
+   - `strokes[0].color.rgba` → `border-[#fff]`
+   - `individualStrokeWeights.top/right/bottom/left` → `border-t/r/b/l-[]`
+   - `strokeJoin/strokeCap` → Line styling
 
-6. **Spacing → Tailwind:**
-   - Calculate from child positions → `gap-[4px]`, `gap-[16px]`
-   - Padding from content bounds → `p-[10px]`, `px-4`, `py-2`
-   - Margins from position offsets → `m-[20px]`, `mx-auto`
+8. **Corner radius:**
+   - `cornerRadius` → `rounded-[]`
+   - ELLIPSE type → `rounded-full`
 
-7. **Effects → Tailwind:**
-   - `effects[].type === DROP_SHADOW` → `shadow-md`, `shadow-lg`, `shadow-xl`
-   - `effects[].radius` → (determine shadow scale)
-   - `effects[].visible` → (only include if true)
+9. **Effects:**
+   - `effects[].type === DROP_SHADOW` → `shadow-sm/md/lg/xl/2xl`
+   - `effects[].type === LAYER_BLUR` → `blur-[]`
+   - `effects[].type === BACKGROUND_BLUR` → `backdrop-blur-[]`
 
-8. **Display → Tailwind:**
-   - `type === FRAME` with multiple children → `flex`
-   - Children arranged vertically → `flex-col`
-   - Children arranged horizontally → `flex-row`
-   - `scrollBehavior === SCROLLS` → `overflow-auto` or `overflow-scroll`
+10. **Transforms:**
+    - `rotation` → Convert rad to deg → `rotate-90`, `-rotate-90`
 
-Build component tree with extracted Tailwind:
-```
+11. **Display:**
+    - `visible === false` → `hidden`
+    - `clipsContent === true` → `overflow-hidden`
+    - `scrollBehavior === SCROLLS` → `overflow-auto`
+    - `blendMode` → Advanced compositing
+
+12. **Variables:**
+    - `boundVariables.*` → Resolve variable ID to value
+    - `explicitVariableModes` → Use correct mode
+
+**Component tree structure:**
+```typescript
 ComponentTree {
-  name: string                    // from name field
+  id: string
+  name: string                    // with [COMP], [STYL] markers
   marker: "[COMP]" | "[STYL]" | none
-  type: "FRAME" | "TEXT" | "RECTANGLE"  // from type field
-  tailwind: string[]              // ALL converted properties
-  rawProps: {                     // Keep raw props for reference
+  type: "FRAME" | "TEXT" | "RECTANGLE" | "ELLIPSE" | "VECTOR" | "LINE" | "INSTANCE"
+  tailwind: string[]              // ALL converted Tailwind
+  rawProps: {                     // Keep raw for reference
     width: number
     height: number
+    layoutMode: string
+    itemSpacing: number
+    fontFamily: string
+    fontWeight: number
     fontSize: number
-    // ... other raw values
+    fills: Fill[]
+    strokeWeight: number
+    cornerRadius: number
+    effects: Effect[]
+    rotation: number
+    visible: boolean
+    boundVariables: Record<string, VariableAlias[]>
   }
   children: ComponentTree[]
-  textContent: string             // from characters field
+  textContent: string             // from characters
+  componentId?: string            // for INSTANCE
+  componentProperties?: Record<string, ComponentProperty>
+  styles?: {
+    fill?: string
+    text?: string
+    stroke?: string
+    effect?: string
+  }
 }
+```
+
+**Color conversion:**
+```javascript
+// RGBA to hex
+rgbaToHex(r, g, b, a = 1) {
+  const toHex = (n) => Math.round(n * 255).toString(16).padStart(2, '0')
+  return a === 1
+    ? `#${toHex(r)}${toHex(g)}${toHex(b)}`
+    : `rgba(${Math.round(r*255)}, ${Math.round(g*255)}, ${Math.round(b*255)}, ${a})`
+}
+```
+
+**Rotation conversion:**
+```javascript
+// Radians to degrees
+radToDeg(rad) => Math.round(rad * (180 / Math.PI))
+// 1.57 rad → 90° → rotate-90
 ```
 
 ### Step 5: Filter Components and Detect Implemented Files

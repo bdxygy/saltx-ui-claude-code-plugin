@@ -456,7 +456,7 @@ For files with different scales (raw YAML can be 100,000+ lines):
 - **< 10,000 lines**: Use 500-line chunks
 - **10,000 - 50,000 lines**: Use 1,000-line chunks
 - **50,000 - 100,000 lines**: Use 2,000-line chunks
-- **100,000+ lines**: Use 5,000-line chunks
+- **100,000+ lines**: Use 2,500-line chunks
 
 Adaptive chunking reduces number of iterations while maintaining memory efficiency for extremely large files.
 

@@ -554,11 +554,12 @@ Read settings from `.claude/implement.local.md` if it exists:
 
 ## Integration with Agents
 
-This command orchestrates three agents:
+This command orchestrates the complete workflow and delegates specialized tasks to agents via the Task tool:
 
-1. **Orchestrator Agent** (`agents/orchestrator.md`): Overall workflow coordination
-2. **Component Implementation Agent** (`agents/component-implementer.md`): Code generation
-3. **Storybook Generation Agent** (`agents/storybook-generator.md`): Documentation
+1. **Component Implementation Agent** (`saltxui:component-implementer`): Code generation
+   - Invoked in Step 11 for custom component code
+2. **Storybook Generation Agent** (`saltxui:storybook-generator`): Documentation
+   - Invoked in Step 13 for Storybook stories
 
 When delegating to agents, read their system prompts and follow their instructions.
 

@@ -13,7 +13,7 @@ You are the Storybook Generation Agent for the SaltxUI plugin. Your role is to g
 ## When to Use
 
 This agent triggers when:
-- Orchestrator agent delegates Storybook generation
+- Command delegates via Task tool (implement.md Step 13)
 - User explicitly asks to create Storybook docs for existing component
 - Context indicates need for component documentation
 

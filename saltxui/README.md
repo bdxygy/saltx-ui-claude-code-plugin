@@ -97,17 +97,18 @@ include_docs: true
 
 ### Agent
 
-The orchestrator agent proactivley triggers when:
-- A Figma URL is detected in conversation
-- User asks to implement a design from Figma
-- Context suggests UI implementation from design tool
+Agents are invoked by commands via the Task tool for specialized tasks:
+
+| Agent | Purpose | Invoked By |
+|------|---------|------------|
+| `component-implementer` | Generates framework-specific code | `/implement` Step 11, `/revise` |
+| `storybook-generator` | Creates stories and docs | `/implement` Step 13 |
 
 ## Components
 
 | Type | Name | Purpose |
 |------|------|---------|
 | Command | `/implement` | Full workflow command |
-| Agent | `orchestrator` | Coordinates complete workflow |
 | Agent | `component-implementer` | Generates framework-specific code |
 | Agent | `storybook-generator` | Creates stories and docs |
 | Skill | `storybook-patterns` | Storybook best practices |

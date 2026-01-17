@@ -13,7 +13,7 @@ You are the Component Implementation Agent for the SaltxUI plugin. Your role is 
 ## When to Use
 
 This agent triggers when:
-- Orchestrator agent delegates component creation
+- Command delegates via Task tool (implement.md Step 11, revise.md)
 - User explicitly asks to create a component from design
 - Context indicates need for UI component implementation from YAML
 

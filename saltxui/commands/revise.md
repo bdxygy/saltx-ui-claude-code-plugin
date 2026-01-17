@@ -66,7 +66,33 @@ Validate the YAML file:
 
 **Note:** The `_raw.yaml` files contain the complete raw response from Figma including all properties, styles, and hierarchy. This is essential for accurate revision as the processed `.yaml` files may omit some details.
 
-### Step 2: Determine Reading Strategy
+### Step 2: Detect Project Framework
+
+**Use Task tool with framework-detection skill:**
+
+```
+Use Task tool with:
+- subagent_type: "saltxui:framework-detection"
+- description: "Detect project framework and configuration"
+- prompt: |
+  Detect the framework for the current project.
+
+  Current working directory: {cwd}
+
+  Detect:
+  1. Framework type (reactjs, next, remix, vue, nuxt, svelte, sveltekit, angular, solidjs)
+  2. TypeScript usage (yes/no)
+  3. File extensions (.tsx, .jsx, .vue, .svelte, etc.)
+
+  Return: FRAMEWORK={framework}, TYPESCRIPT={yes/no}
+```
+
+This is needed to:
+- Find component files with correct extensions
+- Understand framework-specific syntax
+- Apply appropriate fixes
+
+### Step 3: Determine Reading Strategy
 
 Use the detect-lines script to analyze file characteristics and determine optimal reading strategy:
 
@@ -99,7 +125,7 @@ eval "$(saltxui/scripts/detect-lines.sh <yaml-file-path> | grep '^FILE_SIZE\|^LI
 - Process each chunk before reading next
 - Track position between chunks
 
-### Step 3: Read YAML File (Chunked if Large)
+### Step 4: Read YAML File (Chunked if Large)
 
 Use the `USE_CHUNKED` flag from detect-lines script to determine reading approach:
 
@@ -150,7 +176,7 @@ fi
 - Stop when chunk returns fewer lines than limit
 - Reconstruct component hierarchy across chunks
 
-### Step 4: Parse Raw YAML and Convert ALL Properties to Tailwind
+### Step 5: Parse Raw YAML and Convert ALL Properties to Tailwind
 
 Extract from raw YAML and convert **ALL** properties to Tailwind utility classes for maximal precision.
 
@@ -635,7 +661,7 @@ radToDeg(rad) => Math.round(rad * (180 / Math.PI))
 // 1.57 rad → 90° → rotate-90
 ```
 
-### Step 5: Filter Components and Detect Implemented Files
+### Step 6: Filter Components and Detect Implemented Files
 
 **Filter by --section and/or --component:**
 
@@ -688,7 +714,7 @@ Create mapping:
 YAML Component → Implemented File (filtered by --section/--component)
 ```
 
-### Step 6: Compare Implementation vs YAML
+### Step 7: Compare Implementation vs YAML
 
 For each component from filtered list:
 
@@ -729,7 +755,7 @@ Changes needed:
 - Increase precision: Use exact spacing values from YAML instead of approximations
 ```
 
-### Step 7: Show Diff and Confirm
+### Step 8: Show Diff and Confirm
 
 Present the comparison results to user:
 
@@ -748,7 +774,7 @@ Show detailed diffs? (y/n)
 
 Use `AskUserQuestion` for confirmation.
 
-### Step 8: Revise Components (Chunked Processing)
+### Step 9: Revise Components (Chunked Processing)
 
 For each component marked for revision:
 
@@ -814,7 +840,7 @@ For components marked `[STYL]`:
 - Add ALL custom Tailwind classes from raw YAML (not just some)
 - Wrap or extend registry component with exact styles from YAML
 
-### Step 9: Verify Revisions
+### Step 10: Verify Revisions
 
 After revising each component:
 
@@ -837,7 +863,7 @@ Component: Button ✓ REVISED
 - Structure verified
 ```
 
-### Step 10: Show Final Summary
+### Step 11: Show Final Summary
 
 Display revision summary:
 
@@ -1008,3 +1034,70 @@ Read settings from `.claude/implement.local.md` if it exists:
 - Verify each revision before moving to next
 - Keep backups of original files
 - Use `--fix-style` for quick style-only updates
+
+## Integration with Agents and Skills
+
+This command integrates with SaltxUI skills for enhanced functionality:
+
+### Available Skills
+
+**framework-detection** (`skills/framework-detection/`):
+- Detects project framework (React, Next.js, Vue, Nuxt, Svelte, SvelteKit, Angular, SolidJS)
+- Identifies TypeScript usage and routing type
+- Used in Step 2 for framework-aware file discovery
+
+**saltxui-mcp** (`skills/saltxui-mcp/`):
+- Provides YAML parsing guidance
+- Converts Figma tokens to Tailwind classes
+- Handles contextual token attributes
+- Can be used for complex YAML parsing in Step 5
+
+**multi-framework-generation** (`skills/multi-framework-generation/`):
+- Framework-specific code patterns
+- Props patterns and syntax mappings
+- Useful for applying framework-specific fixes
+
+**turborepo-structure** (`skills/turborepo-structure/`):
+- Import path patterns
+- Standard layout conventions
+- File placement guidance
+
+### Using Skills with Task Tool
+
+For complex operations, delegate to skills using Task tool:
+
+```
+Task tool:
+- subagent_type: "saltxui:framework-detection"
+- description: "Detect project framework"
+- prompt: "Detect framework for current project"
+
+Task tool:
+- subagent_type: "saltxui:saltxui-mcp"
+- description: "Parse Figma YAML"
+- prompt: "Parse YAML and extract components"
+```
+
+### Agent Delegation
+
+For component generation after revisions:
+- Use `saltxui:component-implementer` agent via Task tool
+- Follows framework-specific patterns
+- Applies proper syntax and conventions
+
+## Configuration
+
+Read settings from `.claude/implement.local.md` if it exists:
+- `auto_fix`: Automatically apply fixes without confirmation
+- `chunk_size`: Lines per chunk (default: 500, auto-scales for large files)
+- `max_file_size`: Threshold for chunked reading in KB (default: 100)
+- `max_line_count`: Threshold for line count in lines (default: 10,000)
+- `dry_run`: Show changes without applying
+
+## Hooks
+
+Hooks run automatically:
+- **Pre-write validation**: Validates code before writing (skips .md files)
+- **Post-implementation verification**: Verifies files after creation (skips .md files)
+
+These are configured in `hooks/hooks.json` and run automatically.

@@ -66,20 +66,20 @@ First, verify this is a Turborepo project:
 
 2. If NOT a Turborepo project:
    - Use `AskUserQuestion` to prompt the user:
-   
+
    ```
    Question: This project does not appear to be a Turborepo project.
-   
+
    Options:
    - "Continue with current structure" - Create components using existing project structure
    - "Migrate to Turborepo first" - Set up Turborepo structure before implementing
    ```
-   
+
    - If user chooses "Migrate to Turborepo first":
      - Stop implementation
      - Provide guidance on Turborepo migration
      - Suggest running `/implement` again after migration
-   
+
    - If user chooses "Continue with current structure":
      - Proceed with existing directory structure
      - Place components in appropriate locations based on framework
@@ -91,8 +91,33 @@ First, verify this is a Turborepo project:
    - Default to first app in `apps/` if ambiguous
 
 4. If `--framework` not provided:
-   - Run framework detection script: `/Users/budisantoso/.claude/plugins/cache/claude-plugins-official/plugin-dev/f70b65538da0/scripts/detect-framework.sh`
-   - Parse output: `FRAMEWORK=..., TYPESCRIPT=..., ROUTING=...`
+
+   **Use Task tool with framework-detection skill:**
+
+   ```
+   Use Task tool with:
+   - subagent_type: "saltxui:framework-detection"
+   - description: "Detect project framework and configuration"
+   - prompt: |
+     Detect the framework for the current project.
+
+     Current working directory: {cwd}
+     Project structure: {turborepo or standard}
+
+     Detect:
+     1. Framework type (reactjs, next, remix, vue, nuxt, svelte, sveltekit, angular, solidjs)
+     2. TypeScript usage (yes/no)
+     3. Routing type (file-based, config-based, none)
+     4. Build tool (vite, webpack, etc.)
+
+     Return: FRAMEWORK={framework}, TYPESCRIPT={yes/no}, ROUTING={type}
+   ```
+
+   The framework-detection skill will:
+   1. Analyze package.json dependencies
+   2. Check configuration files (vite.config, next.config, etc.)
+   3. Examine directory structure
+   4. Return accurate framework detection results
 
 ### Step 3: Call SaltxUI MCP to Fetch Design Data
 
@@ -106,14 +131,44 @@ The MCP tool returns:
 - YAML file path: `.salt-ui/figma/{fileId}/{nodeId}.yaml`
 - Raw file path for reference
 
+**Note**: The saltxui-mcp skill provides guidance for working with the returned YAML structure and converting Figma tokens to Tailwind classes. Refer to this skill when parsing the YAML in Step 4.
+
 ### Step 4: Read and Parse YAML
 
-Read the generated YAML file and parse:
-- Component names (with markers: `[COMP]`, `[STYL]`, or none)
-- Tailwind classes
-- Component hierarchy
-- Text content
-- Props and variants
+**Use Task tool with saltxui-mcp skill for YAML parsing:**
+
+```
+Use Task tool with:
+- subagent_type: "saltxui:saltxui-mcp"
+- description: "Parse Figma YAML and extract component data"
+- prompt: |
+  Parse the YAML file at: {yaml_path}
+
+  Extract:
+  1. Component names with markers ([COMP], [STYL], or none)
+  2. Tailwind classes for each component
+  3. Component hierarchy and children
+  4. Text content (from characters field)
+  5. Props and variants (from componentProperties)
+  6. All contextual token attributes
+
+  Return structured component data ready for code generation.
+```
+
+The saltxui-mcp skill will:
+1. Read and parse the YAML structure
+2. Extract component hierarchy with markers
+3. Convert Figma tokens to Tailwind classes
+4. Identify text content and properties
+5. Return structured data for implementation
+
+**Manual parsing fallback** (if Task tool unavailable):
+- Read the generated YAML file directly
+- Extract component names (with markers: `[COMP]`, `[STYL]`, or none)
+- Extract Tailwind classes
+- Parse component hierarchy
+- Extract text content
+- Parse props and variants
 
 ### Step 5: List All Registry Components
 
@@ -372,14 +427,37 @@ addFromRegistry = [
 
 For components marked `[COMP]` or not found in registry:
 
-Delegate to the Component Implementation Agent by reading its instructions and following them:
+**Delegate to Component Implementation Agent using Task tool:**
 
-1. Read `agents/component-implementer.md`
-2. Follow the agent's workflow for code generation
-3. Create component files with framework-specific syntax
-4. Create route files as needed
-5. Use appropriate file extensions (.tsx, .jsx, .vue, .svelte, etc.)
-6. Apply Tailwind classes from YAML for `[STYL]` components
+```
+Use Task tool with:
+- subagent_type: "saltxui:component-implementer"
+- description: "Generate framework-specific component code"
+- prompt: |
+  Generate component code for the following:
+
+  Framework: {detected_framework}
+  TypeScript: {yes/no}
+  Components to build: {component_list}
+  YAML data: {yaml_path}
+
+  Component specifications:
+  - ComponentName1: [COMP] - build custom from scratch
+  - ComponentName2: [STYL] - apply custom Tailwind to registry component
+
+  Create:
+  1. Component files with framework-specific syntax
+  2. Route files as needed
+  3. Use appropriate file extensions (.tsx, .jsx, .vue, .svelte, etc.)
+  4. Apply exact Tailwind classes from YAML for [STYL] components
+```
+
+The Component Implementation Agent will:
+1. Read the component-implementer.md agent instructions
+2. Generate framework-specific code using multi-framework-generation skill
+3. Create proper file structure using turborepo-structure skill
+4. Apply component-architecture skill for routing patterns
+5. Return generated files with implementation details
 
 ### Step 12: Install Dependencies
 
@@ -404,11 +482,31 @@ Options:
 
 If user chooses to generate:
 
-1. Read `agents/storybook-generator.md`
-2. Follow the agent's workflow for Storybook generation
-3. Create `.stories.tsx` files with CSF3 format
-4. Create `.mdx` documentation files with component docs
-5. Verify stories are valid for the target framework
+**Delegate to Storybook Generation Agent using Task tool:**
+
+```
+Use Task tool with:
+- subagent_type: "saltxui:storybook-generator"
+- description: "Generate Storybook stories and documentation"
+- prompt: |
+  Generate Storybook stories for the following implemented components:
+
+  Framework: {detected_framework}
+  Components: {component_list}
+  Component files: {file_paths}
+
+  Generate:
+  1. .stories.tsx files with CSF3 format
+  2. .mdx documentation files with component docs
+  3. Proper variants and props tables
+  4. Verify stories are valid for the target framework
+```
+
+The Storybook Generation Agent will:
+1. Read the storybook-generator.md agent instructions
+2. Use storybook-patterns skill for CSF3 format
+3. Generate proper decorators and documentation
+4. Return generated story files with docs
 
 If user chooses to skip:
 - Note that Storybook can be added later
